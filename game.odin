@@ -107,6 +107,8 @@ Game :: struct {
 	scheduler:       Scheduler,
 	quit:            bool,
 
+    current_floor:   int,
+
 	logger:          Logger,
 	debug_throttles: map[string]Debug_Throttle,
 	crash_logger:    Logger,
@@ -124,6 +126,8 @@ init_game :: proc(width, height: int) -> Game {
 		map_width  = width,
 		map_height = height,
 	}
+
+    game.current_floor = 0
 
 	game.tiles = make([dynamic][dynamic]Tile, height)
 	game.revealed = make([dynamic][dynamic]bool, height)

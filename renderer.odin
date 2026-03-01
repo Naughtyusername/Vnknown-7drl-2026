@@ -175,6 +175,8 @@ draw_debug_info :: proc(game: ^Game) {
 	y += spacing
 	rl.DrawText(rl.TextFormat("Real Time: %f", rl.GetTime()), 10, y, font_size, rl.WHITE)
 	y += spacing
+	rl.DrawText(rl.TextFormat("Current Floor #%d", game.current_floor), 10, y, font_size, rl.WHITE)
+	y += spacing
 
 	if draw_light_debug_overlay {
 		draw_light_debug(game)
