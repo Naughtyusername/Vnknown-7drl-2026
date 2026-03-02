@@ -29,21 +29,21 @@ draw_map :: proc(game: ^Game) {
 			base_color: rl.Color
 			#partial switch game.tiles[world_y][world_x] {
 			case .Wall:
-				base_color = COLOR_WALL
+				base_color = sample_color(WALL_COLOR)
 				if game.visible[world_y][world_x] {
 					light_color := game.light_map[world_y][world_x]
 					if is_dark(light_color) {
 						light_color = AMBIENT_LIGHT
 					}
-					accent := apply_lighting(COLOR_WALL_ACCENT, light_color)
+					accent := apply_lighting(sample_color(WALL_ACCENT), light_color)
 					rl.DrawRectangleLinesEx(rect, 1, accent)
 				}
 			case .Water:
-				base_color = COLOR_WATER
+				base_color = sample_color(WATER)
 			case .Floor:
-				base_color = COLOR_FLOOR
+				base_color = sample_color(FLOOR_COLOR)
 			case .Stairs_Down:
-				base_color = COLOR_FLOOR
+				base_color = sample_color(FLOOR_COLOR)
 			// TODO
 			}
 
@@ -70,7 +70,7 @@ draw_map :: proc(game: ^Game) {
 					if is_dark(light_color) {
 						light_color = AMBIENT_LIGHT
 					}
-					accent := apply_lighting(COLOR_FLOOR_ACCENT, light_color)
+					accent := apply_lighting(sample_color(FLOOR_ACCENT), light_color)
 					rl.DrawCircle(
 						i32(rect.x + TILE_SIZE / 2),
 						i32(rect.y + TILE_SIZE / 2),
@@ -84,7 +84,7 @@ draw_map :: proc(game: ^Game) {
 					if is_dark(light_color) {
 						light_color = AMBIENT_LIGHT
 					}
-					accent := apply_lighting(COLOR_WALL_ACCENT, light_color)
+					accent := apply_lighting(sample_color(WALL_ACCENT), light_color)
 					rl.DrawRectangleLinesEx(rect, 1, accent)
 				}
 			case .Water:

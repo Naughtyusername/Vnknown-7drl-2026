@@ -155,7 +155,7 @@ init_game :: proc(width, height: int) -> Game {
 		hp = 100,
 		time_next = 0,
 		speed = 100,
-		data = Player_Data{color = rl.PURPLE},
+		data = Player_Data{color = sample_color(PLAYER)},
 	}
 	append(&game.actors, player)
 	game.player_index = 0

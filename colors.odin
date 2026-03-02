@@ -3,9 +3,6 @@ package sdrl
 import "core:math/rand"
 import rl "vendor:raylib"
 
-// TODO change the colors from the current bland basics to the vibrant
-// planned ones. those should be fun for the 7drl.
-
 // inspired from brogue's color dancing
 Color_Range :: struct {
 	r, g, b:             u8, // base color
@@ -56,9 +53,7 @@ PLAYER :: Color_Range{10, 195, 205, 5, 8, 8, 5, false}
 // Placeholder enemy — will be replaced per-type later
 ENEMY_DEFAULT :: Color_Range{200, 80, 60, 8, 5, 5, 3, false}
 
-
 // ===== STANDARD & DEFAULT COLORS =====
-LIGHT_MAX_STANDARD :: rl.Color{255, 147, 41, 255} // Warm torch glow
 LIGHT_NONE :: rl.Color{0, 0, 0, 255} // Darkness
 AMBIENT_LIGHT :: rl.Color{38, 38, 38, 255}
 
@@ -66,31 +61,6 @@ AMBIENT_LIGHT :: rl.Color{38, 38, 38, 255}
 UI_BG :: rl.Color{20, 20, 25, 255}
 UI_TEXT :: rl.Color{220, 220, 220, 255}
 UI_HIGHLIGHT :: rl.Color{255, 215, 0, 255}
-
-// TODO remove these
-// ===== LIGHT COLORS =====
-LIGHT_TORCH_BASIC :: rl.Color{255, 147, 41, 255} // Warm torch glow
-LIGHT_FIRE :: rl.Color{255, 85, 0, 255} // Bright fire
-LIGHT_POISON :: rl.Color{50, 205, 50, 255} // Toxic green
-LIGHT_MOONLIGHT :: rl.Color{180, 200, 230, 255} // Cool blue-white
-LIGHT_BLOOD :: rl.Color{139, 0, 0, 255} // Dark red
-
-// ===== ENTITY COLORS =====
-COLOR_PLAYER :: rl.Color{255, 255, 255, 255}
-COLOR_ENEMY_WEAK :: rl.Color{200, 100, 100, 255}
-COLOR_ENEMY_STRONG :: rl.Color{139, 0, 0, 255}
-
-// ===== OBJECT/TILE COLORS (BASE - before lighting) =====
-COLOR_FLOOR :: rl.Color{64, 64, 64, 255}
-COLOR_WALL :: rl.Color{96, 96, 96, 255}
-
-// Brogue-inspired palette
-COLOR_FLOOR_DOT := rl.Color{85, 75, 60, 255} // - noticeably lighter, stands out
-COLOR_WATER :: rl.Color{30, 144, 255, 255}
-
-// ===== TILE DETAIL COLORS (BASE - before lighting) =====
-COLOR_FLOOR_ACCENT :: rl.Color{80, 80, 80, 255} // Darker gray for floor dots
-COLOR_WALL_ACCENT :: rl.Color{150, 150, 150, 255} // Lighter gray for wall borders
 
 add_light :: proc(existing: rl.Color, new_light: rl.Color) -> rl.Color {
 	return rl.Color {

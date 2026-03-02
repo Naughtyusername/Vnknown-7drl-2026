@@ -1,7 +1,6 @@
 package sdrl
 
 import "core:math/rand"
-import rl "vendor:raylib"
 
 update_player :: proc(game: ^Game, actor: ^Actor, next_x, next_y: int) {
 	if in_bounds(game, next_x, next_y) && game.tiles[next_y][next_x] != .Wall {
@@ -46,7 +45,7 @@ spawn_enemies :: proc(game: ^Game, count: int) {
 			hp = 10,
 			time_next = 0,
 			speed = 100, // TODO: variable speed
-			data = Enemy_Data{color = rl.Color{200, 80, 60, 255}, char = "e"},
+			data = Enemy_Data{color = sample_color(ENEMY_DEFAULT), char = "e"},
 		}
 		append(&game.actors, enemy)
 	}

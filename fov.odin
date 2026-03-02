@@ -31,9 +31,9 @@ cast_light :: proc(
 	ox, oy: int,
 	radius: int,
 	octant: int,
-	start_row: int,    // starts at 1
-	start_slope: f32,  // HIGH boundary 1.0, diagonal side
-	end_slope: f32,    // LOW boundary 0.0, the axis side
+	start_row: int, // starts at 1
+	start_slope: f32, // HIGH boundary 1.0, diagonal side
+	end_slope: f32, // LOW boundary 0.0, the axis side
 	visited: ^map[[2]int]bool,
 ) {
 	if start_slope < end_slope {return}
@@ -79,7 +79,7 @@ cast_light :: proc(
 						dist := math.sqrt(f32(col * col + current_row * current_row))
 						intensity := (1.0 - dist / f32(radius))
 
-						dimmed_light := dim_color(LIGHT_TORCH_BASIC, intensity)
+						dimmed_light := dim_color(sample_color(LANTERN_LIGHT_COLOR), intensity)
 						game.light_map[wy][wx] = dimmed_light // Direct assignment, no add_light!
 
 						visited^[tile_coord] = true
@@ -138,7 +138,7 @@ compute_fov :: proc(game: ^Game, origin_x, origin_y, radius: int) {
 	if in_bounds(game, origin_x, origin_y) {
 		game.visible[origin_y][origin_x] = true
 		game.revealed[origin_y][origin_x] = true
-		game.light_map[origin_y][origin_x] = LIGHT_MAX_STANDARD
+		game.light_map[origin_y][origin_x] = sample_color(LANTERN_LIGHT_COLOR)
 	}
 
 	// Prevents octant overlap — each tile lit only once
