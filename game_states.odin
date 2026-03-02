@@ -174,10 +174,11 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 playing_draw :: proc(sm: ^State_Manager, data: rawptr) {
 	state := (^Playing_State)(data)
 	game := state.game_ptr
-	draw_map(game)
+    draw_message_area(game) // topbar
+	draw_map(game) // worldmap
 	draw_enemies(game)
 	draw_player(game)
-	render_message_overlay(game)
+    draw_hud(game) // bottom bar ui/hud
 	when ODIN_DEBUG {
 		if draw_debug_overlay {draw_debug_info(game)}
 	}

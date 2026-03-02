@@ -11,8 +11,15 @@ VIEWPORT_HEIGHT :: 34
 
 TILE_SIZE :: 20
 
+// will tweak later
+HUD_HEIGHT :: 44 // 2 lines x ~20px + 4px padding
+MSG_HEIGHT :: 64 // 5 lines x ~20px + 4px padding
+
+MAP_AREA_Y :: MSG_HEIGHT
+HUD_AREA_Y :: MSG_HEIGHT + (VIEWPORT_HEIGHT * TILE_SIZE)
+
 SCREEN_W :: VIEWPORT_WIDTH * TILE_SIZE
-SCREEN_H :: VIEWPORT_HEIGHT * TILE_SIZE
+SCREEN_H :: MSG_HEIGHT + (VIEWPORT_HEIGHT * TILE_SIZE) + HUD_HEIGHT
 
 // Map generation constants
 CA_WALL_PROB :: 0.42

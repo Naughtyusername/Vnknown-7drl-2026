@@ -21,7 +21,7 @@ draw_map :: proc(game: ^Game) {
 
 			rect := rl.Rectangle {
 				f32(screen_x * TILE_SIZE),
-				f32(screen_y * TILE_SIZE),
+				f32(screen_y * TILE_SIZE + MAP_AREA_Y),
 				TILE_SIZE,
 				TILE_SIZE,
 			}
@@ -85,7 +85,7 @@ draw_map :: proc(game: ^Game) {
 						light_color = AMBIENT_LIGHT
 					}
 					accent := apply_lighting(sample_color(WALL_ACCENT), light_color)
-                    rl.DrawText("#", i32(rect.x + 4), i32(rect.y + 2), 20, accent)
+					rl.DrawText("#", i32(rect.x + 4), i32(rect.y + 2), 20, accent)
 				}
 			case .Water:
 
@@ -112,7 +112,7 @@ draw_player :: proc(game: ^Game) {
 			rl.DrawText(
 				"@",
 				i32(screen_x * TILE_SIZE + 4),
-				i32(screen_y * TILE_SIZE + 2),
+				i32(screen_y * TILE_SIZE + MAP_AREA_Y + 2),
 				20,
 				data.color,
 			)
@@ -148,7 +148,7 @@ draw_enemies :: proc(game: ^Game) {
 					rl.DrawText(
 						data.char,
 						i32(screen_x * TILE_SIZE + 4),
-						i32(screen_y * TILE_SIZE + 2),
+						i32(screen_y * TILE_SIZE + MAP_AREA_Y + 2),
 						20,
 						data.color,
 					)
@@ -244,7 +244,7 @@ draw_light_debug :: proc(game: ^Game) {
 					rl.DrawText(
 						rl.TextFormat("%d", hit_count),
 						i32(screen_x * TILE_SIZE + 12),
-						i32(screen_y * TILE_SIZE + 12),
+						i32(screen_y * TILE_SIZE + MAP_AREA_Y + 12),
 						10,
 						rl.YELLOW,
 					)
@@ -252,4 +252,104 @@ draw_light_debug :: proc(game: ^Game) {
 			}
 		}
 	}
+}
+
+draw_log_column :: proc(log: Message_Log, x_offset: i32) {
+	count := min(3, len(log.messages))
+	if count == 0 {return}
+
+	start := len(log.messages) - count
+
+	for i in 0 ..< count {
+		msg := log.messages[start + i]
+		y := i32(4 + i * 20)
+		rl.DrawText(fmt.ctprintf("%s", msg.text), x_offset, y, 16, msg.color)
+	}
+}
+
+draw_message_area :: proc(game: ^Game) {
+	// Background
+	rl.DrawRectangle(0, 0, SCREEN_W, MSG_HEIGHT, rl.Color{10, 10, 15, 255})
+
+	// Vertical divider between messages and combat logs
+	mid_x := i32(SCREEN_W / 2)
+	rl.DrawLine(mid_x, 2, mid_x, i32(MSG_HEIGHT) - 2, rl.Color{40, 40, 60, 255})
+
+	// Left column is game logs / all events
+	draw_log_column(game.game_log, 10)
+
+	// Right column is combat logs, damage numbers, kills
+	draw_log_column(game.combat_log, mid_x + 10)
+}
+
+get_resource_color :: proc(current, max_val: int) -> rl.Color {
+	if max_val == 0 {return rl.Color{220, 40, 40, 255}}
+	pct := f32(current) * 100.0 / f32(max_val)
+	if pct > 75 {return rl.Color{0, 220, 230, 255}} 	// cyan - healthy
+	if pct > 50 {return rl.Color{0, 200, 0, 255}} 	// green - fine
+	if pct > 25 {return rl.Color{230, 200, 0, 255}} 	// yellow - caution
+	return rl.Color{220, 40, 40, 255} // red - danger
+}
+
+draw_hud :: proc(game: ^Game) {
+	player := get_player(game)
+	player_data, ok := player.data.(Player_Data)
+	if !ok {return}
+
+	// === Background and separator ===
+	rl.DrawRectangle(0, i32(HUD_AREA_Y), SCREEN_W, i32(HUD_HEIGHT), rl.Color{10, 10, 15, 255})
+	rl.DrawLine(0, i32(HUD_AREA_Y), SCREEN_W, i32(HUD_AREA_Y), rl.Color{40, 40, 60, 255})
+
+	FONT_SIZE :: i32(16)
+	y1 := i32(HUD_AREA_Y) + 4 // line 1 - player status
+	y2 := i32(HUD_AREA_Y) + 24 // line 2 - game state
+
+	// === Line 1: player status ===
+	rl.DrawText("@", 10, y1, FONT_SIZE, sample_color(PLAYER))
+
+	rl.DrawText(
+		fmt.ctprintf("HP:%d/%d", player.hp, 20), // TODO: player.max_hp
+		140,
+		y1,
+		FONT_SIZE,
+		get_resource_color(player.hp, 20),
+	)
+
+	rl.DrawText(
+		fmt.ctprintf("Fuel:%d/%d", player_data.lantern.fuel, player_data.lantern.max_fuel),
+		260,
+		y1,
+		FONT_SIZE,
+		get_resource_color(player_data.lantern.fuel, player_data.lantern.max_fuel),
+	)
+
+	rl.DrawText("San:0%", 460, y1, FONT_SIZE, rl.Color{0, 220, 230, 255}) //
+	// TODO: sanity
+	rl.DrawText("[Fists]", 560, y1, FONT_SIZE, rl.WHITE) //
+	// TODO: weapon
+
+	// === Line 2: game state ===
+	rl.DrawText(fmt.ctprintf("Fl:%d", game.current_floor), 10, y2, FONT_SIZE, rl.WHITE)
+	rl.DrawText(
+		fmt.ctprintf("T:%d", game.turn_count),
+		80,
+		y2,
+		FONT_SIZE,
+		rl.Color{100, 100, 120, 255},
+	)
+
+	lantern_label: cstring
+	lantern_color: rl.Color
+	switch player_data.lantern.state {
+	case .Lit:
+		lantern_label = "Lantern:Lit"
+		lantern_color = rl.Color{245, 160, 55, 255}
+	case .Extinguished:
+		lantern_label = "Lantern:Off"
+		lantern_color = rl.Color{140, 140, 140, 255}
+	case .Empty:
+		lantern_label = "LANTERN:EMPTY"
+		lantern_color = rl.Color{220, 40, 40, 255}
+	}
+	rl.DrawText(lantern_label, 200, y2, FONT_SIZE, lantern_color)
 }
