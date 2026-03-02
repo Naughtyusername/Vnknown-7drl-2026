@@ -27,7 +27,7 @@ draw_map :: proc(game: ^Game) {
 			}
 
 			base_color: rl.Color
-            #partial switch game.tiles[world_y][world_x] {
+			#partial switch game.tiles[world_y][world_x] {
 			case .Wall:
 				base_color = COLOR_WALL
 				if game.visible[world_y][world_x] {
@@ -42,9 +42,10 @@ draw_map :: proc(game: ^Game) {
 				base_color = COLOR_WATER
 			case .Floor:
 				base_color = COLOR_FLOOR
-            case .Stairs_Down:
-                // TODO
-		    }
+			case .Stairs_Down:
+				base_color = COLOR_FLOOR
+			// TODO
+			}
 
 			if game.visible[world_y][world_x] {
 				light_color := game.light_map[world_y][world_x]
@@ -61,8 +62,7 @@ draw_map :: proc(game: ^Game) {
 
 			rl.DrawRectangleRec(rect, base_color)
 
-            // TODO possibly adjust these switches to handle all cases (create a default)
-            // for now partial switch is ok tho.
+			// Detailing draws
 			#partial switch game.tiles[world_y][world_x] {
 			case .Floor:
 				if game.visible[world_y][world_x] {
@@ -88,7 +88,16 @@ draw_map :: proc(game: ^Game) {
 					rl.DrawRectangleLinesEx(rect, 1, accent)
 				}
 			case .Water:
-			// TODO: water rendering — puddles for catacombs, more prominent on later floors
+
+			case .Stairs_Down:
+				if game.visible[world_y][world_x] {
+					light_color := game.light_map[world_y][world_x]
+					if is_dark(light_color) {
+						light_color = AMBIENT_LIGHT
+					}
+					stair_color := apply_lighting(rl.WHITE, light_color)
+					rl.DrawText(">", i32(rect.x + 4), i32(rect.y + 2), 20, stair_color)
+				}
 			}
 		}
 	}
@@ -113,8 +122,8 @@ draw_player :: proc(game: ^Game) {
 
 draw_game :: proc(sm: ^State_Manager) {
 	if len(sm.stack) == 0 {
-        return
-    }
+		return
+	}
 
 	// Find the lowest opaque state — draw layers from there upward
 	start_index: int = 0
@@ -201,7 +210,7 @@ render_message_overlay :: proc(game: ^Game) {
 		if alpha > 255 {alpha = 255}
 
 		y := i32(SCREEN_H) - 25 - i32((count - 1 - line) * 20)
-		x : i32 = 0
+		x: i32 = 0
 
 		rl.DrawRectangle(0, y - 2, SCREEN_W, 20, rl.Color{0, 0, 0, u8(alpha / 2)})
 		rl.DrawText(

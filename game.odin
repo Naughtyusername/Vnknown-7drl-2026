@@ -3,8 +3,8 @@ package sdrl
 import "core:fmt"
 import rl "vendor:raylib"
 
-MAP_WIDTH :: 100
-MAP_HEIGHT :: 100
+MAP_WIDTH :: 25
+MAP_HEIGHT :: 25
 VIEWPORT_WIDTH :: 60
 VIEWPORT_HEIGHT :: 34
 
@@ -26,14 +26,15 @@ fov_radius: int = 10 // TODO: dynamic lighting via lantern
 screen_w: int
 screen_h: int
 
+draw_debug_overlay := false
 draw_light_debug_overlay := false
 
 Tile :: enum {
 	Floor,
 	Wall,
 	Water,
-    Stairs_Down,
-    Tile_Max,
+	Stairs_Down,
+	Tile_Max,
 }
 
 Action :: enum {
@@ -64,7 +65,6 @@ Actor :: struct {
 	hp:        int,
 	time_next: int,
 	speed:     int,
-
 	data:      Actor_Data,
 }
 
@@ -91,28 +91,21 @@ Debug_Throttle :: struct {
 Game :: struct {
 	map_width:       int,
 	map_height:      int,
-
 	tiles:           [dynamic][dynamic]Tile,
 	revealed:        [dynamic][dynamic]bool,
 	visible:         [dynamic][dynamic]bool,
 	light_map:       [dynamic][dynamic]rl.Color,
-
 	actors:          [dynamic]Actor,
 	player_index:    int, // Index of player in actors array (always 0)
-
 	camera:          Camera,
-
 	turn_count:      int,
 	current_time:    int,
 	scheduler:       Scheduler,
 	quit:            bool,
-
-    current_floor:   int,
-
+	current_floor:   int,
 	logger:          Logger,
 	debug_throttles: map[string]Debug_Throttle,
 	crash_logger:    Logger,
-
 	game_log:        Message_Log,
 	combat_log:      Message_Log,
 	debug_log:       Message_Log,
@@ -127,7 +120,7 @@ init_game :: proc(width, height: int) -> Game {
 		map_height = height,
 	}
 
-    game.current_floor = 0
+	game.current_floor = 0
 
 	game.tiles = make([dynamic][dynamic]Tile, height)
 	game.revealed = make([dynamic][dynamic]bool, height)
@@ -377,4 +370,41 @@ log_gamef :: proc(game: ^Game, level: Log_Level, format: string, args: ..any) {
 	message := fmt.aprintf(format, ..args)
 	defer delete(message) // tprintf allocates, must free
 	log_game(game, level, message)
+}
+
+descend_floor :: proc(game: ^Game) {
+	game.current_floor += 1
+
+	// Free old map data (rows only - outer arrays stay allocated)
+	for y in 0 ..< game.map_height {
+		// Rest to defaults instead of free+realloc
+		for x in 0 ..< game.map_width {
+			game.tiles[y][x] = .Floor
+			game.revealed[y][x] = false
+			game.visible[y][x] = false
+			game.light_map[y][x] = LIGHT_NONE
+		}
+	}
+
+	// keep only the player
+	resize(&game.actors, 1)
+
+	// Later: full heal on floor transition
+
+	// Generate new floor
+	generate_dungeon(game)
+
+	// Rebuild scheduler
+	clear(&game.scheduler.actors)
+	for &actor in game.actors {
+		schedule_actor(&game.scheduler, &actor)
+	}
+
+    // Center cameraand recompute FOV
+    player := get_player(game)
+    center_camera(&game.camera, player.x, player.y, game.map_width,
+                 game.map_height)
+    compute_fov(game, player.x, player.y, fov_radius)
+
+    log_messagef(game, "You descend to floor %d...", game.current_floor)
 }

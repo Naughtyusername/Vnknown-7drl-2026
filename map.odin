@@ -37,8 +37,8 @@ place_stairs :: proc(game: ^Game) {
 
         // 4-directional neighbors ( not 8 - don't want stairs to require diagonal only paths. )
         for dir in ([4][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}) {
-            nx := current.x - dir[0]
-            ny := current.y - dir[1]
+            nx := current.x + dir[0]
+            ny := current.y + dir[1]
 
             if !in_bounds(game, nx, ny) { continue }
             if dist[ny][nx] != -1 {continue } // already visited
@@ -119,6 +119,7 @@ generate_dungeon :: proc(game: ^Game) {
         place_player(game)
     }
 
+    place_stairs(game)
     spawn_enemies(game, 10)
 
     log_messagef(game, "The dungeon shift around you...")

@@ -85,14 +85,12 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 		return
 	}
 
-	/*
     // TODO: fullscreen toggle
     if rl.IsKeyPressed(.F11) {
         rl.ToggleFullscreen()
         rl.GetScreenWidth()
         rl.GetScreenHeight()
     }
-    */
 
 	if rl.IsKeyPressed(.P) || rl.IsKeyPressed(.ESCAPE) {
 		paused_state_data := new(Paused_State)
@@ -112,6 +110,18 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 		push_state(sm, paused_game_state)
 		return
 	}
+
+    // Debug keybinds
+    when ODIN_DEBUG {
+        if rl.IsKeyPressed(.F8) {
+        draw_light_debug_overlay = !draw_light_debug_overlay
+        }
+    }
+    when ODIN_DEBUG {
+        if rl.IsKeyPressed(.F3) {
+            draw_debug_overlay = !draw_debug_overlay
+        }
+    }
 
 	player_acted := false
 
@@ -154,7 +164,9 @@ playing_draw :: proc(sm: ^State_Manager, data: rawptr) {
 	draw_enemies(game)
 	draw_player(game)
 	render_message_overlay(game)
-	when ODIN_DEBUG {draw_debug_info(game)}
+	when ODIN_DEBUG {
+        if draw_debug_overlay { draw_debug_info(game) }
+    }
 }
 
 playing_kill :: proc(sm: ^State_Manager, data: rawptr) {
@@ -234,13 +246,14 @@ paused_kill :: proc(sm: ^State_Manager, data: rawptr) {
 }
 
 // --- Input Handling ---
-
 handle_input :: proc(game: ^Game) -> Maybe(Action) {
 	player := get_player(game)
 
 	next_x := player.x
 	next_y := player.y
 
+    // TODO we need to swap the rl key here to allow for shifted keys..
+    // when we do that add in numpad and arrow key support.
 	if rl.IsKeyPressed(.K) {next_y -= 1}
 	if rl.IsKeyPressed(.J) {next_y += 1}
 	if rl.IsKeyPressed(.H) {next_x -= 1}
@@ -249,6 +262,19 @@ handle_input :: proc(game: ^Game) -> Maybe(Action) {
 	if rl.IsKeyPressed(.U) {next_x += 1;next_y -= 1}
 	if rl.IsKeyPressed(.B) {next_x -= 1;next_y += 1}
 	if rl.IsKeyPressed(.N) {next_x += 1;next_y += 1}
+
+    // TEMP TODO stair decend
+    if rl.IsKeyPressed(.PERIOD) && (rl.IsKeyDown(.LEFT_SHIFT) ||
+        rl.IsKeyDown(.RIGHT_SHIFT)) {
+            player_tile := get_tile(game, player.x, player.y)
+            if player_tile == .Stairs_Down {
+                descend_floor(game)
+                return .Move // counts as an action
+            } else {
+                log_messagef(game, "There are no stairs here.")
+                return nil
+            }
+        }
 
 	if next_x != player.x || next_y != player.y {
 		target_tile := get_tile(game, next_x, next_y)
