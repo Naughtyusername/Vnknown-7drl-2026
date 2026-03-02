@@ -12,23 +12,14 @@ update_player :: proc(game: ^Game, actor: ^Actor, next_x, next_y: int) {
 
 update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
 	player := get_player(game)
-	player_x := player.x
-	player_y := player.y
 
-	next_x := actor.x
-	next_y := actor.y
+    next_x, next_y, found := astar_step(game, actor.x, actor.y, player.x, player.y)
 
-	if actor.x < player_x {
-		next_x += 1
-	} else if actor.x > player_x {
-		next_x -= 1
-	}
-
-	if actor.y < player_y {
-		next_y += 1
-	} else if actor.y > player_y {
-		next_y -= 1
-	}
+    if found && (next_x != actor.x || next_y != actor.y) {
+        actor.x = next_x
+        actor.y = next_y
+        return .Move
+    }
 
 	if in_bounds(game, next_x, next_y) && game.tiles[next_y][next_x] != .Wall {
 		actor.x = next_x
