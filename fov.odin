@@ -1,6 +1,7 @@
 package sdrl
 
 import "core:math"
+import rl "vendor:raylib"
 
 // ===============================================================================================================================================================
 // Shadowcasting — https://www.albertford.com/shadowcasting/
@@ -26,6 +27,11 @@ transform_octant :: proc(ox, oy, row, col, octant: int) -> (int, int) {
 	return ox + col * m[0] + row * m[1], oy + col * m[2] + row * m[3]
 }
 
+Cast_Mode :: enum {
+	Visibility,
+	Lighting,
+}
+
 cast_light :: proc(
 	game: ^Game,
 	ox, oy: int,
@@ -35,6 +41,8 @@ cast_light :: proc(
 	start_slope: f32, // HIGH boundary 1.0, diagonal side
 	end_slope: f32, // LOW boundary 0.0, the axis side
 	visited: ^map[[2]int]bool,
+	mode: Cast_Mode,
+	light_color: rl.Color = {},
 ) {
 	if start_slope < end_slope {return}
 
@@ -71,21 +79,21 @@ cast_light :: proc(
 
 			if in_range {
 				if blocked || is_symmetric {
-					game.visible[wy][wx] = true
-					game.revealed[wy][wx] = true
-
-					tile_coord := [2]int{wx, wy}
-					if tile_coord not_in visited^ {
-						dist := math.sqrt(f32(col * col + current_row * current_row))
-						intensity := (1.0 - dist / f32(radius))
-
-						dimmed_light := dim_color(sample_color(LANTERN_LIGHT_COLOR), intensity)
-						game.light_map[wy][wx] = dimmed_light // Direct assignment, no add_light!
-
-						visited^[tile_coord] = true
-
-						when ODIN_DEBUG {
-							game.light_hit_count[wy][wx] += 1 // Should always be 1 now
+					switch mode {
+					case .Visibility:
+						game.visible[wy][wx] = true
+						game.revealed[wy][wx] = true
+					case .Lighting:
+						tile_coord := [2]int{wx, wy}
+						if tile_coord not_in visited^ {
+							dist := math.sqrt(f32(col * col + current_row * current_row))
+							intensity := 1.0 - dist / f32(radius)
+							dimmed := dim_color(light_color, intensity)
+							game.light_map[wy][wx] = add_light(game.light_map[wy][wx], dimmed)
+							visited^[tile_coord] = true
+							when ODIN_DEBUG {
+								game.light_hit_count[wy][wx] += 1
+							}
 						}
 					}
 				}
@@ -105,6 +113,8 @@ cast_light :: proc(
 						l_slope,
 						new_end,
 						visited,
+                        mode,
+                        light_color,
 					)
 				}
 				prev_blocked = true
@@ -127,27 +137,39 @@ cast_light :: proc(
 // ===============================================================================================================================================================
 // Bresenham line-of-sight — separate from shadowcasting, cheap for enemy FOV etc.
 // ===============================================================================================================================================================
-compute_fov :: proc(game: ^Game, origin_x, origin_y, radius: int) {
-	for y in 0 ..< game.map_height {
-		for x in 0 ..< game.map_width {
-			game.visible[y][x] = false
-			game.light_map[y][x] = LIGHT_NONE
-		}
-	}
+compute_fov :: proc(game: ^Game, origin_x, origin_y, fov_radius, lantern_radius: int) {
+    // Clear both arrays
+    for y in 0 ..< game.map_height {
+        for x in 0..< game.map_width {
+            game.visible[y][x] = false
+            game.light_map[y][x] = LIGHT_NONE
+        }
+    }
 
-	if in_bounds(game, origin_x, origin_y) {
-		game.visible[origin_y][origin_x] = true
-		game.revealed[origin_y][origin_x] = true
-		game.light_map[origin_y][origin_x] = sample_color(LANTERN_LIGHT_COLOR)
-	}
+    if ! in_bounds(game, origin_x, origin_y) { return }
 
-	// Prevents octant overlap — each tile lit only once
-	visited := make(map[[2]int]bool)
-	defer delete(visited)
+    // --- Visibility pass ---
+    game.visible[origin_y][origin_x] = true
+    game.revealed[origin_y][origin_x] = true
 
-	for octant in 0 ..< 8 {
-		cast_light(game, origin_x, origin_y, radius, octant, 1, 1.0, 0.0, &visited)
-	}
+    vis_visited := make(map[[2]int]bool)
+    defer delete(vis_visited)
+    for octant in 0..< 8 {
+        cast_light(game, origin_x, origin_y, fov_radius, octant, 1,  1.0, 0.0, &vis_visited, .Visibility)
+    }
+
+    // --- Lighting pass ---
+    if lantern_radius > 0 {
+        sampled_light := sample_color(LANTERN_LIGHT_COLOR)
+        game.light_map[origin_y][origin_x] = sampled_light
+
+        light_visited := make(map[[2]int]bool)
+        defer delete(light_visited)
+        for octant in 0..< 8 {
+            cast_light(game, origin_x, origin_y, lantern_radius, octant, 1,  1.0, 0.0, &light_visited, .Lighting, sampled_light)
+        }
+    }
+
 }
 
 // ===============================================================================================================================================================

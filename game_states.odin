@@ -80,7 +80,7 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 			game.map_width,
 			game.map_height,
 		)
-		compute_fov(game, get_player(game).x, get_player(game).y, fov_radius)
+		compute_fov(game, get_player(game).x, get_player(game).y, fov_radius, MAX_LANTERN_RADIUS)
 		game.turn_count = 0
 		return
 	}
@@ -137,8 +137,22 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 				game.scheduler.current_time = actor.time_next
 				schedule_actor(&game.scheduler, actor)
 
+                drain_fuel(game)
+
+                player_data := get_player(game).data.(Player_Data)
+                fov_r := MAX_FOV_RADIUS
+                lantern_r := 0
+                switch player_data.lantern.state {
+                case .Lit:
+                    lantern_r = calculate_lantern_radius(player_data.lantern)
+                case .Extinguished:
+                    fov_r = MAX_FOV_RADIUS // Can still se cave geometry
+                case .Empty:
+                    fov_r = 1 // nearly blind
+                }
+
 				center_camera(&game.camera, actor.x, actor.y, game.map_width, game.map_height)
-				compute_fov(game, actor.x, actor.y, fov_radius)
+				compute_fov(game, actor.x, actor.y, fov_r, lantern_r)
 				game.turn_count += 1
 
 				player_acted = true

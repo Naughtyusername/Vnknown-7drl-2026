@@ -40,9 +40,8 @@ main :: proc() {
 		schedule_actor(&game.scheduler, &actor)
 	}
 
-	// TODO: move FOV/camera init into game states
 	player := get_player(&game)
-	compute_fov(&game, player.x, player.y, fov_radius)
+	compute_fov(&game, player.x, player.y, fov_radius, MAX_LANTERN_RADIUS)
 	center_camera(&game.camera, player.x, player.y, game.map_width, game.map_height)
 
 	for !rl.WindowShouldClose() && !game.quit {
