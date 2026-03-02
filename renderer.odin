@@ -85,7 +85,7 @@ draw_map :: proc(game: ^Game) {
 						light_color = AMBIENT_LIGHT
 					}
 					accent := apply_lighting(sample_color(WALL_ACCENT), light_color)
-					rl.DrawRectangleLinesEx(rect, 1, accent)
+                    rl.DrawText("#", i32(rect.x + 4), i32(rect.y + 2), 20, accent)
 				}
 			case .Water:
 

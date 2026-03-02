@@ -21,6 +21,9 @@ ROOM_COUNT_MAX :: 7
 ROOM_SIZE_MIN :: 5
 ROOM_SIZE_MAX :: 10
 
+MAX_LANTERN_RADIUS :: 8
+MAX_FOV_RADIUS :: 12 // how far player can see when not in darkness/blinded
+
 // Mutable Variants
 fov_radius: int = 10 // TODO: dynamic lighting via lantern
 screen_w: int
@@ -74,8 +77,9 @@ Actor_Data :: union {
 }
 
 Player_Data :: struct {
-	color: rl.Color,
-	char:  cstring,
+	color:   rl.Color,
+	char:    cstring,
+	lantern: Lantern,
 }
 
 Enemy_Data :: struct {
@@ -155,7 +159,10 @@ init_game :: proc(width, height: int) -> Game {
 		hp = 100,
 		time_next = 0,
 		speed = 100,
-		data = Player_Data{color = sample_color(PLAYER)},
+		data = Player_Data {
+			color = sample_color(PLAYER),
+			lantern = Lantern{state = .Lit, fuel = 300, max_fuel = 300},
+		},
 	}
 	append(&game.actors, player)
 	game.player_index = 0
@@ -261,6 +268,50 @@ enemy_at :: proc(game: ^Game, x, y: int) -> bool {
 is_player :: proc(actor: ^Actor) -> bool {
 	_, ok := actor.data.(Player_Data)
 	return ok
+}
+
+Lantern_State :: enum {
+	Lit,
+	Extinguised, // blown out from trap or enemy etc. - re-light with flint
+	Empty, // no fuel, flint wont help
+	// dropped?
+}
+
+Lantern :: struct {
+	state:    Lantern_State,
+	fuel:     int,
+	max_fuel: int,
+}
+
+calculate_lantern_radius :: proc(lantern: Lantern) {
+	if lantern.state != .Lit || lantern.fuel <= 0 {return}
+    // TODO
+//	return max(1, int(f32(MAX_LANTERN_RADIUS) * f32(lantern.fuel) / f32(lantern.max_fuel)))
+}
+
+drain_fuel :: proc(game: ^Game) {
+    player := get_player(game)
+    data, ok := &player.data.(Player_Data)
+    if !ok { return }
+
+    if data.lantern.state != .Lit { return}
+
+    data.lantern.fuel -= 1
+
+    // Threshold warnings
+    pct := data.lantern.fuel * 100 / data.lantern.max_fuel
+    switch {
+    case data.lantern.fuel == data.lantern.max_fuel / 2:
+        log_messagef(game, "Your lantern flickers briefly...")
+    case data.lantern.fuel == data.lantern.max_fuel / 4:
+        log_messagef(game, "Your lantern flickers briefly...")
+    case data.lantern.fuel == data.lantern.max_fuel / 10:
+        log_messagef(game, "Your lantern flickers briefly...")
+    case data.lantern.fuel <= 0:
+        log_messagef(game, "Your lantern flickers briefly...")
+    case data.lantern.fuel = .Empty:
+        log_messagef(game, "Your lantern flickers briefly...")
+    }
 }
 
 get_action_cost :: proc(action: Action) -> int {
@@ -400,11 +451,10 @@ descend_floor :: proc(game: ^Game) {
 		schedule_actor(&game.scheduler, &actor)
 	}
 
-    // Center cameraand recompute FOV
-    player := get_player(game)
-    center_camera(&game.camera, player.x, player.y, game.map_width,
-                 game.map_height)
-    compute_fov(game, player.x, player.y, fov_radius)
+	// Center cameraand recompute FOV
+	player := get_player(game)
+	center_camera(&game.camera, player.x, player.y, game.map_width, game.map_height)
+	compute_fov(game, player.x, player.y, fov_radius)
 
-    log_messagef(game, "You descend to floor %d...", game.current_floor)
+	log_messagef(game, "You descend to floor %d...", game.current_floor)
 }

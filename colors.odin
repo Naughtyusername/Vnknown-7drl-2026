@@ -26,12 +26,12 @@ sample_color :: proc(cr: Color_Range) -> rl.Color {
 
 // ===== ENVIRONMENT =====
 // Dark blue-grey walls, subtle per-tile variation, static
-WALL_COLOR :: Color_Range{50, 55, 75, 6, 6, 10, 4, false}
-WALL_ACCENT :: Color_Range{70, 75, 100, 8, 8, 12, 5, false}
+WALL_COLOR :: Color_Range{16, 40, 80, 5, 5, 12, 4, false}
+WALL_ACCENT :: Color_Range{45, 80, 145, 8, 8, 15, 6, false}
 
 // Near-black navy floors, very subtle variation
-FLOOR_COLOR :: Color_Range{22, 26, 45, 3, 3, 5, 2, false}
-FLOOR_ACCENT :: Color_Range{35, 38, 55, 4, 4, 6, 3, false}
+FLOOR_COLOR :: Color_Range{9, 20, 45, 2, 3, 6, 2, false}
+FLOOR_ACCENT :: Color_Range{15, 30, 58, 3, 4, 8, 3, false}
 
 // Cool blue-cyan, gentle shimmer
 WATER :: Color_Range{15, 100, 140, 5, 15, 20, 8, true}
