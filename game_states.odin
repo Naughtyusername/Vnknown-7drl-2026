@@ -85,12 +85,11 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 		return
 	}
 
-    // TODO: fullscreen toggle
-    if rl.IsKeyPressed(.F11) {
-        rl.ToggleFullscreen()
-        rl.GetScreenWidth()
-        rl.GetScreenHeight()
-    }
+	if rl.IsKeyPressed(.F11) {
+		rl.ToggleFullscreen()
+		rl.GetScreenWidth()
+		rl.GetScreenHeight()
+	}
 
 	if rl.IsKeyPressed(.P) || rl.IsKeyPressed(.ESCAPE) {
 		paused_state_data := new(Paused_State)
@@ -111,17 +110,17 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 		return
 	}
 
-    // Debug keybinds
-    when ODIN_DEBUG {
-        if rl.IsKeyPressed(.F8) {
-        draw_light_debug_overlay = !draw_light_debug_overlay
-        }
-    }
-    when ODIN_DEBUG {
-        if rl.IsKeyPressed(.F3) {
-            draw_debug_overlay = !draw_debug_overlay
-        }
-    }
+	// Debug keybinds
+	when ODIN_DEBUG {
+		if rl.IsKeyPressed(.F8) {
+			draw_light_debug_overlay = !draw_light_debug_overlay
+		}
+	}
+	when ODIN_DEBUG {
+		if rl.IsKeyPressed(.F3) {
+			draw_debug_overlay = !draw_debug_overlay
+		}
+	}
 
 	player_acted := false
 
@@ -137,19 +136,19 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 				game.scheduler.current_time = actor.time_next
 				schedule_actor(&game.scheduler, actor)
 
-                drain_fuel(game)
+				drain_fuel(game)
 
-                player_data := get_player(game).data.(Player_Data)
-                fov_r := MAX_FOV_RADIUS
-                lantern_r := 0
-                switch player_data.lantern.state {
-                case .Lit:
-                    lantern_r = calculate_lantern_radius(player_data.lantern)
-                case .Extinguished:
-                    fov_r = MAX_FOV_RADIUS // Can still se cave geometry
-                case .Empty:
-                    fov_r = 1 // nearly blind
-                }
+				player_data := get_player(game).data.(Player_Data)
+				fov_r := MAX_FOV_RADIUS
+				lantern_r := 0
+				switch player_data.lantern.state {
+				case .Lit:
+					lantern_r = calculate_lantern_radius(player_data.lantern)
+				case .Extinguished:
+					fov_r = MAX_FOV_RADIUS // Can still se cave geometry
+				case .Empty:
+					fov_r = 1 // nearly blind
+				}
 
 				center_camera(&game.camera, actor.x, actor.y, game.map_width, game.map_height)
 				compute_fov(game, actor.x, actor.y, fov_r, lantern_r)
@@ -179,8 +178,8 @@ playing_draw :: proc(sm: ^State_Manager, data: rawptr) {
 	draw_player(game)
 	render_message_overlay(game)
 	when ODIN_DEBUG {
-        if draw_debug_overlay { draw_debug_info(game) }
-    }
+		if draw_debug_overlay {draw_debug_info(game)}
+	}
 }
 
 playing_kill :: proc(sm: ^State_Manager, data: rawptr) {
@@ -266,8 +265,8 @@ handle_input :: proc(game: ^Game) -> Maybe(Action) {
 	next_x := player.x
 	next_y := player.y
 
-    // TODO we need to swap the rl key here to allow for shifted keys..
-    // when we do that add in numpad and arrow key support.
+	// TODO we need to swap the rl key here to allow for shifted keys..
+	// when we do that add in numpad and arrow key support.
 	if rl.IsKeyPressed(.K) {next_y -= 1}
 	if rl.IsKeyPressed(.J) {next_y += 1}
 	if rl.IsKeyPressed(.H) {next_x -= 1}
@@ -277,18 +276,45 @@ handle_input :: proc(game: ^Game) -> Maybe(Action) {
 	if rl.IsKeyPressed(.B) {next_x -= 1;next_y += 1}
 	if rl.IsKeyPressed(.N) {next_x += 1;next_y += 1}
 
-    // TEMP TODO stair decend
-    if rl.IsKeyPressed(.PERIOD) && (rl.IsKeyDown(.LEFT_SHIFT) ||
-        rl.IsKeyDown(.RIGHT_SHIFT)) {
-            player_tile := get_tile(game, player.x, player.y)
-            if player_tile == .Stairs_Down {
-                descend_floor(game)
-                return .Move // counts as an action
-            } else {
-                log_messagef(game, "There are no stairs here.")
-                return nil
-            }
-        }
+	// TODO also when inventory is open we need the movement keys toggled off as
+	// i will use a-z selections.. shouldnt have a need to shift / ctrl on them
+	// like in cogmind so it shouldt just be a simple flag to handle it.
+
+// TODO make this not 60x a second
+	// Toggle lantern
+	if rl.IsKeyDown(.L) && (rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)) {
+		if data, ok := &player.data.(Player_Data); ok {
+			switch data.lantern.state {
+			case .Lit:
+				data.lantern.state = .Extinguished
+				log_messagef(game, "You snuff out the flame.")
+			case .Extinguished:
+				if data.lantern.fuel > 0 {
+					data.lantern.state = .Extinguished
+					log_messagef(game, "You re-light the lantern.")
+				} else {
+					log_messagef(game, "No fuel remains.")
+					return nil
+				}
+			case .Empty:
+				log_messagef(game, "No fuel remains.")
+				return nil
+			}
+			return .Wait
+		}
+	}
+
+	// TEMP TODO stair decend
+	if rl.IsKeyPressed(.PERIOD) && (rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)) {
+		player_tile := get_tile(game, player.x, player.y)
+		if player_tile == .Stairs_Down {
+			descend_floor(game)
+			return .Move // counts as an action
+		} else {
+			log_messagef(game, "There are no stairs here.")
+			return nil
+		}
+	}
 
 	if next_x != player.x || next_y != player.y {
 		target_tile := get_tile(game, next_x, next_y)
