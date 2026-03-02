@@ -20,12 +20,7 @@ update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
         actor.y = next_y
         return .Move
     }
-
-	if in_bounds(game, next_x, next_y) && game.tiles[next_y][next_x] != .Wall {
-		actor.x = next_x
-		actor.y = next_y
-		return .Move
-	}
+    // ai state switch later, hunting/alert/roaming/idle etc.
 
 	return .Wait
 }

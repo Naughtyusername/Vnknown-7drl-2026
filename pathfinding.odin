@@ -1,4 +1,9 @@
 package sdrl
+/*References
+- https://www.redblobgames.com/pathfinding/a-star/introduction.html
+- https://www.redblobgames.com/pathfinding/a-star/implementation.html
+- http://www.roguebasin.com/index.php/The_Incredible_Power_of_Dijkstra_Maps
+*/
 
   Pathfind_Node :: struct {
       x, y:           int,
@@ -13,7 +18,7 @@ package sdrl
   astar_step :: proc(
       game: ^Game,
       start_x, start_y, goal_x, goal_y: int,
-      max_dist: int = 30,
+      max_dist: int = 30, // TODO adjust as needed, this may be too much.
   ) -> (int, int, bool) {
       if start_x == goal_x && start_y == goal_y {
           return start_x, start_y, true

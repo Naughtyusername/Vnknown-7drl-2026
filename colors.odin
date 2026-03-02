@@ -1,9 +1,61 @@
 package sdrl
 
+import "core:math/rand"
 import rl "vendor:raylib"
 
 // TODO change the colors from the current bland basics to the vibrant
 // planned ones. those should be fun for the 7drl.
+
+// inspired from brogue's color dancing
+Color_Range :: struct {
+	r, g, b:             u8, // base color
+	r_var, g_var, b_var: u8, // per-channel random variance
+	uniform_var:         u8, // brighness variance (all channels equally)
+	dances:              bool, // true = re-roll eery frame, false = sample once
+}
+
+sample_color :: proc(cr: Color_Range) -> rl.Color {
+	r_offset := cr.r_var > 0 ? u8(rand.int_max(int(cr.r_var) + 1)) : 0
+	g_offset := cr.g_var > 0 ? u8(rand.int_max(int(cr.g_var) + 1)) : 0
+	b_offset := cr.b_var > 0 ? u8(rand.int_max(int(cr.b_var) + 1)) : 0
+	uniform := cr.uniform_var > 0 ? u8(rand.int_max(int(cr.uniform_var) + 1)) : 0
+
+	r := min(u16(cr.r) + u16(r_offset) + u16(uniform), 255)
+	g := min(u16(cr.g) + u16(g_offset) + u16(uniform), 255)
+	b := min(u16(cr.b) + u16(b_offset) + u16(uniform), 255)
+
+	return rl.Color{u8(r), u8(g), u8(b), 255}
+}
+
+// ===== ENVIRONMENT =====
+// Dark blue-grey walls, subtle per-tile variation, static
+WALL_COLOR :: Color_Range{50, 55, 75, 6, 6, 10, 4, false}
+WALL_ACCENT :: Color_Range{70, 75, 100, 8, 8, 12, 5, false}
+
+// Near-black navy floors, very subtle variation
+FLOOR_COLOR :: Color_Range{22, 26, 45, 3, 3, 5, 2, false}
+FLOOR_ACCENT :: Color_Range{35, 38, 55, 4, 4, 6, 3, false}
+
+// Cool blue-cyan, gentle shimmer
+WATER :: Color_Range{15, 100, 140, 5, 15, 20, 8, true}
+
+// Bright warm gold, slight dancing to catch the eye
+STAIRS :: Color_Range{230, 200, 100, 10, 10, 5, 15, true}
+
+// Fog of war — flat, no variance
+FOG :: Color_Range{8, 12, 25, 0, 0, 0, 0, false}
+
+// ===== LIGHTING =====
+// Warm flickering lantern — the player's primary light source
+LANTERN_LIGHT_COLOR :: Color_Range{245, 160, 55, 20, 15, 8, 10, true}
+
+// ===== ENTITIES =====
+// Cyan-tinted, minimal variance — player is the visual anchor
+PLAYER :: Color_Range{10, 195, 205, 5, 8, 8, 5, false}
+
+// Placeholder enemy — will be replaced per-type later
+ENEMY_DEFAULT :: Color_Range{200, 80, 60, 8, 5, 5, 3, false}
+
 
 // ===== STANDARD & DEFAULT COLORS =====
 LIGHT_MAX_STANDARD :: rl.Color{255, 147, 41, 255} // Warm torch glow
@@ -15,11 +67,10 @@ UI_BG :: rl.Color{20, 20, 25, 255}
 UI_TEXT :: rl.Color{220, 220, 220, 255}
 UI_HIGHLIGHT :: rl.Color{255, 215, 0, 255}
 
+// TODO remove these
 // ===== LIGHT COLORS =====
 LIGHT_TORCH_BASIC :: rl.Color{255, 147, 41, 255} // Warm torch glow
 LIGHT_FIRE :: rl.Color{255, 85, 0, 255} // Bright fire
-LIGHT_MAGIC_BLUE :: rl.Color{100, 149, 237, 255} // Arcane magic
-LIGHT_MAGIC_PURPLE :: rl.Color{147, 51, 234, 255} // Dark magic
 LIGHT_POISON :: rl.Color{50, 205, 50, 255} // Toxic green
 LIGHT_MOONLIGHT :: rl.Color{180, 200, 230, 255} // Cool blue-white
 LIGHT_BLOOD :: rl.Color{139, 0, 0, 255} // Dark red
@@ -34,11 +85,7 @@ COLOR_FLOOR :: rl.Color{64, 64, 64, 255}
 COLOR_WALL :: rl.Color{96, 96, 96, 255}
 
 // Brogue-inspired palette
-// old
-//COLOR_FLOOR := rl.Color{55, 45, 38, 255} // - darker, more contrast against walls
 COLOR_FLOOR_DOT := rl.Color{85, 75, 60, 255} // - noticeably lighter, stands out
-//COLOR_WALL := rl.Color{120, 100, 80, 255} // - brighter accent line on walls
-//COLOR_WALL_ACCENT := rl.Color{140, 115, 90, 255} // - actually visible against floor
 COLOR_WATER :: rl.Color{30, 144, 255, 255}
 
 // ===== TILE DETAIL COLORS (BASE - before lighting) =====
@@ -52,7 +99,7 @@ add_light :: proc(existing: rl.Color, new_light: rl.Color) -> rl.Color {
 		min(u8(int(existing.b) + int(new_light.b)), 255),
 		255,
 	}
-    // TODO debug text, check if colors are saturating (hitting 255) or wrapping over
+	// TODO debug text, check if colors are saturating (hitting 255) or wrapping over
 }
 
 is_dark :: proc(c: rl.Color) -> bool {
