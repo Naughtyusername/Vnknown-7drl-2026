@@ -161,7 +161,7 @@ draw_enemies :: proc(game: ^Game) {
 draw_debug_info :: proc(game: ^Game) {
 	player := get_player(game)
 
-	y: i32 = 10
+	y: i32 = i32(MAP_AREA_Y) + 10
 	font_size: i32 = 20
 	spacing: i32 = (font_size - 2)
 
@@ -269,7 +269,7 @@ draw_log_column :: proc(log: Message_Log, x_offset: i32) {
 
 draw_message_area :: proc(game: ^Game) {
 	// Background
-	rl.DrawRectangle(0, 0, SCREEN_W, MSG_HEIGHT, rl.Color{10, 10, 15, 255})
+	rl.DrawRectangle(0, 0, SCREEN_W, MSG_HEIGHT, rl.Color{0, 11, 30, 255})
 
 	// Vertical divider between messages and combat logs
 	mid_x := i32(SCREEN_W / 2)
@@ -297,7 +297,7 @@ draw_hud :: proc(game: ^Game) {
 	if !ok {return}
 
 	// === Background and separator ===
-	rl.DrawRectangle(0, i32(HUD_AREA_Y), SCREEN_W, i32(HUD_HEIGHT), rl.Color{10, 10, 15, 255})
+	rl.DrawRectangle(0, i32(HUD_AREA_Y), SCREEN_W, i32(HUD_HEIGHT), rl.Color{0, 11, 30, 255})
 	rl.DrawLine(0, i32(HUD_AREA_Y), SCREEN_W, i32(HUD_AREA_Y), rl.Color{40, 40, 60, 255})
 
 	FONT_SIZE :: i32(16)

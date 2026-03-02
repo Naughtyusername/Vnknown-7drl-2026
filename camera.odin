@@ -1,5 +1,7 @@
 package sdrl
 
+// TODO we need to clamp this to not move map outside of view (hud going over)
+
 center_camera :: proc(camera: ^Camera, target_x, target_y, map_width, map_height: int) {
     camera.x = target_x - camera.viewport_width / 2
     camera.y = target_y - camera.viewport_height / 2

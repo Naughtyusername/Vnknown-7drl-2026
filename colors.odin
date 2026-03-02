@@ -55,7 +55,7 @@ ENEMY_DEFAULT :: Color_Range{200, 80, 60, 8, 5, 5, 3, false}
 
 // ===== STANDARD & DEFAULT COLORS =====
 LIGHT_NONE :: rl.Color{0, 0, 0, 255} // Darkness
-AMBIENT_LIGHT :: rl.Color{70, 70, 80, 255}
+AMBIENT_LIGHT :: rl.Color{90, 90, 100, 255}
 
 // ===== UI COLORS =====
 UI_BG :: rl.Color{20, 20, 25, 255}
