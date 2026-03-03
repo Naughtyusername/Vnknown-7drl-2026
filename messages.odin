@@ -64,21 +64,13 @@ log_message :: proc(game: ^Game, text: string, type: Message_Type = .Game) {
 		timestamp = rl.GetTime(),
 	}
 
-	append(&game.game_log.messages, msg)
-
 	switch type {
 	case .Combat:
-        combat_msg := msg
-        combat_msg.text = strings.clone(text)
-		append(&game.combat_log.messages, combat_msg)
+		append(&game.combat_log.messages, msg)
 	case .Debug:
-        debug_msg := msg
-        debug_msg.text = strings.clone(text)
-		append(&game.debug_log.messages, debug_msg)
+		append(&game.debug_log.messages, msg)
 	case .Game:
-        game_msg := msg
-        game_msg.text = strings.clone(text)
-		append(&game.game_log.messages, game_msg)
+		append(&game.game_log.messages, msg)
 	}
 
 	if len(game.game_log.messages) > game.game_log.max_size {

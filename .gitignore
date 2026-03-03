@@ -6,6 +6,7 @@ bin/
 build/
 out/
 sdrl
+*sdrl
 *.exe
 7drl-2026-feb-march
 

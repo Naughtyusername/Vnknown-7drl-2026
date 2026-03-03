@@ -1,5 +1,6 @@
 package sdrl
 
+import "core:fmt"
 import rl "vendor:raylib"
 
 // --- State Machine Base ---
@@ -42,6 +43,60 @@ cleanup_states :: proc(sm: ^State_Manager) {
 	delete(sm.stack)
 }
 
+// === Death State ===
+
+Death_State :: struct {
+	game_ptr: ^Game,
+}
+
+death_update :: proc(sm: ^State_Manager, data: rawptr) {
+	state := (^Death_State)(data)
+	if rl.IsKeyPressed(.ENTER) || rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.SPACE) {
+		state.game_ptr.quit = true
+	}
+}
+
+death_draw :: proc(sm: ^State_Manager, data: rawptr) {
+	state := (^Death_State)(data)
+	game := state.game_ptr
+
+	// Dark overlay over the map
+	rl.DrawRectangle(0, 0, SCREEN_W, SCREEN_H, rl.Color{0, 0, 0, 180})
+
+	cx := SCREEN_W / 2
+	cy := SCREEN_H / 2
+
+	// "Slain by X"
+	cause := fmt.ctprintf("Slain by a %s", game.death_cause)
+	cw := rl.MeasureText(cause, 28)
+	rl.DrawText(cause, i32(cx) - cw / 2, i32(cy) - 60, 28, rl.Color{220, 40, 40, 255})
+
+	// "on Floor X"
+	floor_text := fmt.ctprintf("on Floor %d", game.current_floor)
+	fw := rl.MeasureText(floor_text, 20)
+	rl.DrawText(floor_text, i32(cx) - fw / 2, i32(cy) - 24, 20, rl.Color{150, 150, 160, 255})
+
+	// Stats
+	turns_text := fmt.ctprintf("Turns survived: %d", game.turn_count)
+	tw := rl.MeasureText(turns_text, 16)
+	rl.DrawText(turns_text, i32(cx) - tw / 2, i32(cy) + 20, 16, rl.Color{120, 120, 130, 255})
+
+	// kills
+	kills_text := fmt.ctprintf("Enemies slain: %d", game.enemies_slain)
+	kw := rl.MeasureText(kills_text, 16)
+	rl.DrawText(kills_text, i32(cx) - kw / 2, i32(cy) + 42, 16, rl.Color{120, 120, 130, 255})
+
+	// Prompt
+	prompt := fmt.ctprintf("-- Press any key to exit --")
+	pw := rl.MeasureText(prompt, 14)
+	rl.DrawText(prompt, i32(cx) - pw / 2, i32(cy) + 100, 14, rl.Color{70, 70, 80, 255})
+
+}
+
+death_kill :: proc(sm: ^State_Manager, data: rawptr) {
+	free((^Death_State)(data))
+}
+
 // --- Playing State ---
 
 Playing_State :: struct {
@@ -52,10 +107,6 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 	state := (^Playing_State)(data)
 	game := state.game_ptr
 
-	if rl.IsKeyPressed(.GRAVE) {
-		return
-	}
-
 	if rl.IsKeyPressed(.R) {
 		for y in 0 ..< game.map_height {
 			for x in 0 ..< game.map_width {
@@ -64,7 +115,7 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 			}
 		}
 
-		resize(&game.actors, 1) // Keep only player at index 0
+		resize(&game.actors, 1) // Keep only player at index 0 ALWAYS
 
 		generate_dungeon(game)
 
@@ -164,8 +215,19 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 			if !actor.alive {continue}
 			ai_action := update_enemy(game, actor)
 			if get_player(game).hp <= 0 {
-				// TODO push death state here laer
-				game.quit = true // placehlder
+				if get_player(game).hp <= 0 {
+					death_state_data := new(Death_State)
+					death_state_data.game_ptr = game
+					push_state(
+						sm,
+						Game_State {
+							data = death_state_data,
+							update = death_update,
+							draw = death_draw,
+							kill = death_kill,
+							is_transparent = true,
+						})
+				}
 				break
 			}
 			action_cost := get_action_cost(ai_action)

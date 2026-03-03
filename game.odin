@@ -119,6 +119,10 @@ Game :: struct {
 	scheduler:       Scheduler,
 	quit:            bool,
 	current_floor:   int,
+
+    death_cause:     string, // "Thrall", "Wolf" - set when player dies
+    enemies_slain:   int,
+
 	logger:          Logger,
 	debug_throttles: map[string]Debug_Throttle,
 	crash_logger:    Logger,
