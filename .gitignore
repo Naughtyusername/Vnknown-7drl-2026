@@ -32,6 +32,7 @@ debug.log
 *.swn
 *~
 .DS_Store
+ols.json
 
 # OS
 .DS_Store

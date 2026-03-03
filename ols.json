@@ -2,20 +2,11 @@
   "$schema": "https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json",
   
   // 1. COLLECTIONS (Auto-replaced by script)
-  "collections": [
-    {
-      "name": "core",
-      "path": "/tools/Odin/core"
-    },
-    {
-      "name": "vendor",
-      "path": "/tools/Odin/vendor"
-    },
-    {
-      "name": "base",
-      "path": "/tools/Odin/base"
-    }
-  ],
+"collections": [
+    {"name": "core",   "path": "/home/naughty/tools/Odin/core"},
+    {"name": "vendor", "path": "/home/naughty/tools/Odin/vendor"},
+    {"name": "base",   "path": "/home/naughty/tools/Odin/base"}
+]
   
   // 2. DOCUMENT SYNC
   "enable_document_provider": true,
