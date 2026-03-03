@@ -50,9 +50,6 @@ LANTERN_LIGHT_COLOR :: Color_Range{245, 160, 55, 20, 15, 8, 10, true}
 // Cyan-tinted, minimal variance — player is the visual anchor
 PLAYER :: Color_Range{10, 195, 205, 5, 8, 8, 5, false}
 
-// Placeholder enemy — will be replaced per-type later
-ENEMY_DEFAULT :: Color_Range{200, 80, 60, 8, 5, 5, 3, false}
-
 // ===== ENEMIES =====
 THRALL_COLOR :: Color_Range{220, 130, 45, 8, 5, 5, 3, false} // burnt amber
 WOLF_COLOR :: Color_Range{140, 150, 175, 5, 5, 8, 3, false} // steel grey-blue

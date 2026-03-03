@@ -80,7 +80,7 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 			game.map_width,
 			game.map_height,
 		)
-        fov_r, lantern_r := get_fov_radii(game)
+		fov_r, lantern_r := get_fov_radii(game)
 		compute_fov(game, get_player(game).x, get_player(game).y, fov_r, lantern_r)
 		game.turn_count = 0
 		return
@@ -161,7 +161,13 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 				break
 			}
 		} else {
+			if !actor.alive {continue}
 			ai_action := update_enemy(game, actor)
+			if get_player(game).hp <= 0 {
+				// TODO push death state here laer
+				game.quit = true // placehlder
+				break
+			}
 			action_cost := get_action_cost(ai_action)
 			actor.time_next += action_cost * 100 / actor.speed
 			game.current_time = actor.time_next
@@ -174,11 +180,11 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 playing_draw :: proc(sm: ^State_Manager, data: rawptr) {
 	state := (^Playing_State)(data)
 	game := state.game_ptr
-    draw_message_area(game) // topbar
+	draw_message_area(game) // topbar
 	draw_map(game) // worldmap
 	draw_enemies(game)
 	draw_player(game)
-    draw_hud(game) // bottom bar ui/hud
+	draw_hud(game) // bottom bar ui/hud
 	when ODIN_DEBUG {
 		if draw_debug_overlay {draw_debug_info(game)}
 	}
@@ -264,38 +270,38 @@ paused_kill :: proc(sm: ^State_Manager, data: rawptr) {
 handle_input :: proc(game: ^Game) -> Maybe(Action) {
 	player := get_player(game)
 
-    shift := rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)
+	shift := rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)
 
 	next_x := player.x
 	next_y := player.y
 
-    // === VI KEYS ====
-    if rl.IsKeyPressed(.H) && !shift {next_x -= 1}
-    if rl.IsKeyPressed(.J) && !shift {next_y += 1}
-    if rl.IsKeyPressed(.K) && !shift {next_y -= 1}
-    if rl.IsKeyPressed(.L) && !shift {next_x += 1}
+	// === VI KEYS ====
+	if rl.IsKeyPressed(.H) && !shift {next_x -= 1}
+	if rl.IsKeyPressed(.J) && !shift {next_y += 1}
+	if rl.IsKeyPressed(.K) && !shift {next_y -= 1}
+	if rl.IsKeyPressed(.L) && !shift {next_x += 1}
 
 	if rl.IsKeyPressed(.Y) && !shift {next_x -= 1;next_y -= 1}
 	if rl.IsKeyPressed(.U) && !shift {next_x += 1;next_y -= 1}
 	if rl.IsKeyPressed(.B) && !shift {next_x -= 1;next_y += 1}
 	if rl.IsKeyPressed(.N) && !shift {next_x += 1;next_y += 1}
 
-    // === NUMPAD ===
-    if rl.IsKeyPressed(.KP_4) && !shift {next_x -= 1}
-    if rl.IsKeyPressed(.KP_2) && !shift {next_y += 1}
-    if rl.IsKeyPressed(.KP_8) && !shift {next_y -= 1}
-    if rl.IsKeyPressed(.KP_6) && !shift {next_x += 1}
+	// === NUMPAD ===
+	if rl.IsKeyPressed(.KP_4) && !shift {next_x -= 1}
+	if rl.IsKeyPressed(.KP_2) && !shift {next_y += 1}
+	if rl.IsKeyPressed(.KP_8) && !shift {next_y -= 1}
+	if rl.IsKeyPressed(.KP_6) && !shift {next_x += 1}
 
 	if rl.IsKeyPressed(.KP_7) && !shift {next_x -= 1;next_y -= 1}
 	if rl.IsKeyPressed(.KP_9) && !shift {next_x += 1;next_y -= 1}
 	if rl.IsKeyPressed(.KP_1) && !shift {next_x -= 1;next_y += 1}
 	if rl.IsKeyPressed(.KP_3) && !shift {next_x += 1;next_y += 1}
 
-    // === ARROW KEYS ===
-    if rl.IsKeyPressed(.LEFT) && !shift {next_x -= 1}
-    if rl.IsKeyPressed(.DOWN) && !shift {next_y += 1}
-    if rl.IsKeyPressed(.UP)   && !shift {next_y -= 1}
-    if rl.IsKeyPressed(.RIGHT) && !shift {next_x += 1}
+	// === ARROW KEYS ===
+	if rl.IsKeyPressed(.LEFT) && !shift {next_x -= 1}
+	if rl.IsKeyPressed(.DOWN) && !shift {next_y += 1}
+	if rl.IsKeyPressed(.UP) && !shift {next_y -= 1}
+	if rl.IsKeyPressed(.RIGHT) && !shift {next_x += 1}
 
 	// Toggle lantern
 	if rl.IsKeyPressed(.L) && shift {
@@ -335,8 +341,8 @@ handle_input :: proc(game: ^Game) -> Maybe(Action) {
 		target_tile := get_tile(game, next_x, next_y)
 
 		if target_tile != .Wall {
-			if enemy_at(game, next_x, next_y) {
-				log_messagef(game, "You attacked %d for %d damage!")
+			if target := get_enemy_at(game, next_x, next_y); target != nil {
+				resolve_player_attack(game, player, target)
 				return .Attack
 			}
 			player.x = next_x

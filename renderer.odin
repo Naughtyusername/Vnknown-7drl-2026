@@ -142,6 +142,7 @@ draw_game :: proc(sm: ^State_Manager) {
 draw_enemies :: proc(game: ^Game) {
 	for &actor in game.actors {
 		if data, ok := actor.data.(Enemy_Data); ok {
+            if !actor.alive { continue }
 			if game.visible[actor.y][actor.x] {
 				screen_x, screen_y, in_view := world_to_screen(game.camera, actor.x, actor.y)
 				if in_view {

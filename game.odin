@@ -74,8 +74,8 @@ Actor :: struct {
 	id:        int,
 	x, y:      int,
 	hp:        int,
-    alive:     bool,
-    max_hp:    int,
+	alive:     bool,
+	max_hp:    int,
 	time_next: int,
 	speed:     int,
 	data:      Actor_Data,
@@ -93,10 +93,10 @@ Player_Data :: struct {
 }
 
 Enemy_Data :: struct {
-    name:  string,
-	color: rl.Color,
-	char:  cstring,
-    damage: int,
+	name:   string,
+	color:  rl.Color,
+	char:   cstring,
+	damage: int,
 }
 
 Debug_Throttle :: struct {
@@ -169,8 +169,8 @@ init_game :: proc(width, height: int) -> Game {
 		x = width / 2,
 		y = height / 2,
 		hp = 20,
-        alive = true,
-        max_hp = 20,
+		alive = true,
+		max_hp = 20,
 		time_next = 0,
 		speed = 100,
 		data = Player_Data {
@@ -270,13 +270,24 @@ get_player :: proc(game: ^Game) -> ^Actor {
 
 enemy_at :: proc(game: ^Game, x, y: int) -> bool {
 	for &actor in game.actors {
+        if !actor.alive { continue }
 		if _, ok := actor.data.(Enemy_Data); ok {
+            if !actor.alive { continue }
 			if actor.x == x && actor.y == y {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+get_enemy_at :: proc(game: ^Game, x, y: int) -> ^Actor {
+    for &actor in game.actors {
+        if _, ok := actor.data.(Enemy_Data); !ok { continue }
+        if !actor.alive { continue }
+        if actor.x == x && actor.y == y {return &actor }
+    }
+    return nil
 }
 
 is_player :: proc(actor: ^Actor) -> bool {
@@ -315,7 +326,8 @@ get_fov_radii :: proc(game: ^Game) -> (fov_r: int, lantern_r: int) {
 calculate_lantern_radius :: proc(lantern: Lantern) -> int {
 	if lantern.state != .Lit || lantern.fuel <= 0 {return 0}
 	ratio := f32(lantern.fuel) / f32(lantern.max_fuel)
-	return clamp(int(math.sqrt(ratio) * f32(MAX_LANTERN_RADIUS)), 0, MAX_LANTERN_RADIUS)
+    // Brilliant soltiuon to the awkward radii fading, wrap the whole block in a math.round function
+	return clamp(int(math.round(math.pow(ratio, 0.3) * f32(MAX_LANTERN_RADIUS))), 0, MAX_LANTERN_RADIUS)
 }
 
 drain_fuel :: proc(game: ^Game) {
@@ -482,7 +494,7 @@ descend_floor :: proc(game: ^Game) {
 	player := get_player(game)
 	center_camera(&game.camera, player.x, player.y, game.map_width, game.map_height)
 
-    fov_r, lantern_r := get_fov_radii(game)
+	fov_r, lantern_r := get_fov_radii(game)
 	compute_fov(game, player.x, player.y, fov_r, lantern_r)
 
 	log_messagef(game, "You descend to floor %d...", game.current_floor)

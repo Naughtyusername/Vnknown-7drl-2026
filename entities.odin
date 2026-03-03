@@ -10,11 +10,19 @@ update_player :: proc(game: ^Game, actor: ^Actor, next_x, next_y: int) {
 }
 
 update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
+	if !actor.alive {return .Wait}
 	player := get_player(game)
 
 	next_x, next_y, found := astar_step(game, actor.x, actor.y, player.x, player.y)
 
+	if get_enemy_at(game, next_x, next_y) != nil {return .Wait}
+
 	if found && (next_x != actor.x || next_y != actor.y) {
+		if next_x == player.x && next_y == player.y {
+			resolve_enemy_attack(game, actor^, player)
+			return .Attack
+		}
+        if get_enemy_at(game, next_x, next_y) != nil { return .Wait }
 		actor.x = next_x
 		actor.y = next_y
 		return .Move
@@ -75,12 +83,7 @@ make_wolf :: proc(id, x, y: int) -> Actor {
 		max_hp = 12,
 		alive = true,
 		speed = 120,
-		data = Enemy_Data {
-			name = "Wolf",
-			char = "w",
-			color = sample_color(WOLF_COLOR),
-			damage = 5,
-		},
+		data = Enemy_Data{name = "Wolf", char = "w", color = sample_color(WOLF_COLOR), damage = 5},
 	}
 }
 
