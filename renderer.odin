@@ -140,21 +140,51 @@ draw_game :: proc(sm: ^State_Manager) {
 	}
 }
 
+should_draw_enemy :: proc(game: ^Game, actor: ^Actor) -> (draw: bool, dimmed: bool) {
+	// not in FOV at all - never draw
+	if !game.visible[actor.y][actor.x] {return false, false}
+
+	enemy_data, ok := actor.data.(Enemy_Data)
+	if !ok {return false, false}
+
+	tile_lit := !is_dark(game.light_map[actor.y][actor.x])
+	player := get_player(game)
+	player_data := player.data.(Player_Data)
+
+	if tile_lit {
+		// Lit tile - stealthy enemies only visible within lantern radius
+		if .Stealthy in enemy_data.tags {
+			if player_data.lantern.state != .Lit {return false, false}
+			dist := max(abs(actor.x - player.x), abs(actor.y - player.y))
+			lantern_r := calculate_lantern_radius(player_data.lantern)
+			if dist > lantern_r {return false, false}
+		}
+		return true, false
+	}
+
+	// dark tile but in FOV
+	if .Carries_Light in enemy_data.tags {return true, false}
+	if .Large in enemy_data.tags {return true, true}
+	return false, false
+}
+
 draw_enemies :: proc(game: ^Game) {
 	for &actor in game.actors {
 		if data, ok := actor.data.(Enemy_Data); ok {
 			if !actor.alive {continue}
-			if game.visible[actor.y][actor.x] {
-				screen_x, screen_y, in_view := world_to_screen(game.camera, actor.x, actor.y)
-				if in_view {
-					rl.DrawText(
-						data.char,
-						i32(screen_x * TILE_SIZE + 4),
-						i32(screen_y * TILE_SIZE + MAP_AREA_Y + 2),
-						20,
-						data.color,
-					)
-				}
+			draw, dimmed := should_draw_enemy(game, &actor)
+			if !draw {continue}
+			color := data.color
+			if dimmed {color = rl.Color{color.r / 3, color.g / 3, color.b / 3, 180}}
+			screen_x, screen_y, in_view := world_to_screen(game.camera, actor.x, actor.y)
+			if in_view {
+				rl.DrawText(
+					data.char,
+					i32(screen_x * TILE_SIZE + 4),
+					i32(screen_y * TILE_SIZE + MAP_AREA_Y + 2),
+					20,
+					color,
+				)
 			}
 		}
 	}
@@ -167,22 +197,28 @@ draw_debug_info :: proc(game: ^Game) {
 	font_size: i32 = 20
 	spacing: i32 = (font_size - 2)
 
-    // player pos
+	// player pos
 	rl.DrawText(rl.TextFormat("Player: (%d, %d)", player.x, player.y), 10, y, font_size, rl.WHITE)
 	y += spacing
-    // turn count
+	// turn count
 	rl.DrawText(rl.TextFormat("Turn: %d", game.turn_count), 10, y, font_size, rl.WHITE)
 	y += spacing
-    // time units total elapsed since start TODO still starts at 100, fix that
+	// time units total elapsed since start TODO still starts at 100, fix that
 	rl.DrawText(rl.TextFormat("Total TU: %d", game.current_time), 10, y, font_size, rl.WHITE)
 	y += spacing
-    // remainder TU eg. attack for 80, turn 10, display 1080TU
-	rl.DrawText(rl.TextFormat("Turn: %d (%dTU)", game.turn_count, game.current_time), 10, y, font_size, rl.WHITE)
+	// remainder TU eg. attack for 80, turn 10, display 1080TU
+	rl.DrawText(
+		rl.TextFormat("Turn: %d (%dTU)", game.turn_count, game.current_time),
+		10,
+		y,
+		font_size,
+		rl.WHITE,
+	)
 	y += spacing
-    // actor count
+	// actor count
 	rl.DrawText(rl.TextFormat("Actors: %d", len(game.actors)), 10, y, font_size, rl.WHITE)
 	y += spacing
-    // scheduler count
+	// scheduler count
 	rl.DrawText(
 		rl.TextFormat("Scheduled: %d", len(game.scheduler.actors)),
 		10,
@@ -191,10 +227,10 @@ draw_debug_info :: proc(game: ^Game) {
 		rl.WHITE,
 	)
 	y += spacing
-    // real time elapsed since start
+	// real time elapsed since start
 	rl.DrawText(rl.TextFormat("Real Time: %f", rl.GetTime()), 10, y, font_size, rl.WHITE)
 	y += spacing
-    // current floor
+	// current floor
 	rl.DrawText(rl.TextFormat("Current Floor #%d", game.current_floor), 10, y, font_size, rl.WHITE)
 	y += spacing
 
@@ -348,12 +384,14 @@ draw_hud :: proc(game: ^Game) {
 
 	rl.DrawText("San:0%", 460, y1, FONT_SIZE, rl.Color{0, 220, 230, 255}) //
 	// TODO: sanity
-    base_name: cstring
-    switch player_data.active_weapon {
-    case .Dagger: base_name = "Dagger"
-    case .Whip: base_name = "Whip"
-}
-    rl.DrawText(fmt.ctprintf("Wep[%s]", base_name), 560, y1, FONT_SIZE, rl.WHITE)
+	base_name: cstring
+	switch player_data.active_weapon {
+	case .Dagger:
+		base_name = "Dagger"
+	case .Whip:
+		base_name = "Whip"
+	}
+	rl.DrawText(fmt.ctprintf("Wep[%s]", base_name), 560, y1, FONT_SIZE, rl.WHITE)
 
 	// === Line 2: game state ===
 	rl.DrawText(fmt.ctprintf("Fl:%d", game.current_floor), 10, y2, FONT_SIZE, rl.WHITE)

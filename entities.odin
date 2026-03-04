@@ -22,6 +22,9 @@ update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
 			enemy_data.last_known_y = player.y
 			return .Wait
 		}
+		if enemy_data.enemy_type == .Wolf {
+			alert_wolf_pack(game, actor)
+		}
 	case .Hunting:
 		if can_detect_player(game, actor) {
 			enemy_data.last_known_x = player.x
@@ -55,6 +58,23 @@ update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
 
 	}
 	return .Wait
+}
+
+alert_wolf_pack :: proc(game: ^Game, alerting_wolf: ^Actor) {
+	wolf_data := alerting_wolf.data.(Enemy_Data)
+	for &actor in game.actors {
+		if !actor.alive {continue}
+		e, ok := &actor.data.(Enemy_Data)
+		if !ok {continue}
+		if e.enemy_type != .Wolf {continue}
+		if e.ai_state == .Hunting {continue}
+		dist := max(abs(actor.x - alerting_wolf.x), abs(actor.y - alerting_wolf.y))
+		if dist <= 6 {
+			e.ai_state = .Hunting
+			e.last_known_x = wolf_data.last_known_x
+			e.last_known_y = wolf_data.last_known_y
+		}
+	}
 }
 
 can_detect_player :: proc(game: ^Game, actor: ^Actor) -> bool {
