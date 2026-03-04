@@ -13,11 +13,13 @@ kill_enemy :: proc(game: ^Game, target: ^Actor) {
 resolve_player_attack :: proc(game: ^Game, attacker: ^Actor, target: ^Actor) {
 	player := get_player(game)
 	player_data, ok := player.data.(Player_Data)
-	if !ok { return }
+	if !ok {return}
 
 	stats := get_weapon_stats(player_data.active_weapon)
 	damage := stats.damage
-	game.last_action_cost = stats.speed
+	if player_data.active_weapon != .Whip {
+		game.last_action_cost = stats.speed
+	}
 
 	target.hp -= damage
 	if enemy_data, e_ok := target.data.(Enemy_Data); e_ok {

@@ -166,15 +166,22 @@ draw_debug_info :: proc(game: ^Game) {
 	font_size: i32 = 20
 	spacing: i32 = (font_size - 2)
 
+    // player pos
 	rl.DrawText(rl.TextFormat("Player: (%d, %d)", player.x, player.y), 10, y, font_size, rl.WHITE)
 	y += spacing
+    // turn count
 	rl.DrawText(rl.TextFormat("Turn: %d", game.turn_count), 10, y, font_size, rl.WHITE)
 	y += spacing
-	// TODO: verify time tracks correctly — player acts at 5 TU, 20 moves per turn increment
-	rl.DrawText(rl.TextFormat("Time: %d", game.current_time), 10, y, font_size, rl.WHITE)
+    // time units total elapsed since start TODO still starts at 100, fix that
+	rl.DrawText(rl.TextFormat("Total TU: %d", game.current_time), 10, y, font_size, rl.WHITE)
 	y += spacing
+    // remainder TU eg. attack for 80, turn 10, display 1080TU
+	rl.DrawText(rl.TextFormat("Turn: %d (%dTU)", game.turn_count, game.current_time), 10, y, font_size, rl.WHITE)
+	y += spacing
+    // actor count
 	rl.DrawText(rl.TextFormat("Actors: %d", len(game.actors)), 10, y, font_size, rl.WHITE)
 	y += spacing
+    // scheduler count
 	rl.DrawText(
 		rl.TextFormat("Scheduled: %d", len(game.scheduler.actors)),
 		10,
@@ -183,8 +190,10 @@ draw_debug_info :: proc(game: ^Game) {
 		rl.WHITE,
 	)
 	y += spacing
+    // real time elapsed since start
 	rl.DrawText(rl.TextFormat("Real Time: %f", rl.GetTime()), 10, y, font_size, rl.WHITE)
 	y += spacing
+    // current floor
 	rl.DrawText(rl.TextFormat("Current Floor #%d", game.current_floor), 10, y, font_size, rl.WHITE)
 	y += spacing
 

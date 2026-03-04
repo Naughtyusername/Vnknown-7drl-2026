@@ -416,6 +416,14 @@ handle_input :: proc(game: ^Game) -> Maybe(Action) {
 		}
 	}
 
+	// Whip (A)bility
+	if rl.IsKeyPressed(.A) {
+		pd := player.data.(Player_Data)
+		if pd.active_weapon != .Whip {
+
+		}
+	}
+
 	if rl.IsKeyPressed(.PERIOD) && shift {
 		player_tile := get_tile(game, player.x, player.y)
 		if player_tile == .Stairs_Down {
@@ -432,6 +440,24 @@ handle_input :: proc(game: ^Game) -> Maybe(Action) {
 		if pd, ok := &player.data.(Player_Data); ok {
 			pd.last_dx = next_x - player.x
 			pd.last_dy = next_y - player.y
+		}
+
+		pw := player.data.(Player_Data)
+		if pw.active_weapon == .Whip {
+			dx := next_x - player.x
+			dy := next_y - player.y
+			for dist in 1 ..= 3 {
+				check_x := player.x + dx * dist
+				check_y := player.y + dy * dist
+
+				if get_tile(game, check_x, check_y) == .Wall {break}
+
+				if target := get_enemy_at(game, check_x, check_y); target != nil {
+					game.last_action_cost = 100 + (dist - 1) * 25
+					resolve_player_attack(game, player, target)
+					return .Attack
+				}
+			}
 		}
 
 		target_tile := get_tile(game, next_x, next_y)

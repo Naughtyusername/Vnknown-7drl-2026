@@ -72,14 +72,17 @@ Camera :: struct {
 }
 
 Actor :: struct {
-	id:        int,
-	x, y:      int,
-	hp:        int,
-	alive:     bool,
-	max_hp:    int,
-	time_next: int,
-	speed:     int,
-	data:      Actor_Data,
+    // base stats
+	id:            int,
+	x, y:          int,
+	hp:            int,
+	alive:         bool,
+	max_hp:        int,
+	time_next:     int,
+	speed:         int,
+	// data
+	data:          Actor_Data,
+	stunned_state: int,
 }
 
 Actor_Data :: union {
@@ -142,10 +145,10 @@ Game :: struct {
 	turn_count:       int,
 	current_time:     int,
 	scheduler:        Scheduler,
-    // quitter
+	// quitter
 	quit:             bool,
 	wants_restart:    bool,
-    // status
+	// status
 	last_action_cost: int,
 	current_floor:    int,
 	death_cause:      string, // "Thrall", "Wolf" - set when player dies
