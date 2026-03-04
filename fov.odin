@@ -116,8 +116,8 @@ cast_light :: proc(
 						l_slope,
 						new_end,
 						visited,
-                        mode,
-                        light_color,
+						mode,
+						light_color,
 					)
 				}
 				prev_blocked = true
@@ -142,37 +142,60 @@ cast_light :: proc(
 // ===============================================================================================================================================================
 // call get_fov_radii(game) fov_r lantern_r anytime this func is called
 compute_fov :: proc(game: ^Game, origin_x, origin_y, fov_radius, lantern_radius: int) {
-    // Clear both arrays
-    for y in 0 ..< game.map_height {
-        for x in 0..< game.map_width {
-            game.visible[y][x] = false
-            game.light_map[y][x] = LIGHT_NONE
-        }
-    }
+	// Clear both arrays
+	for y in 0 ..< game.map_height {
+		for x in 0 ..< game.map_width {
+			game.visible[y][x] = false
+			game.light_map[y][x] = LIGHT_NONE
+		}
+	}
 
-    if ! in_bounds(game, origin_x, origin_y) { return }
+	if !in_bounds(game, origin_x, origin_y) {return}
 
-    // --- Visibility pass ---
-    game.visible[origin_y][origin_x] = true
-    game.revealed[origin_y][origin_x] = true
+	// --- Visibility pass ---
+	game.visible[origin_y][origin_x] = true
+	game.revealed[origin_y][origin_x] = true
 
-    vis_visited := make(map[[2]int]bool)
-    defer delete(vis_visited)
-    for octant in 0..< 8 {
-        cast_light(game, origin_x, origin_y, fov_radius, octant, 1,  1.0, 0.0, &vis_visited, .Visibility)
-    }
+	vis_visited := make(map[[2]int]bool)
+	defer delete(vis_visited)
+	for octant in 0 ..< 8 {
+		cast_light(
+			game,
+			origin_x,
+			origin_y,
+			fov_radius,
+			octant,
+			1,
+			1.0,
+			0.0,
+			&vis_visited,
+			.Visibility,
+		)
+	}
 
-    // --- Lighting pass ---
-    if lantern_radius > 0 {
-        sampled_light := sample_color(LANTERN_LIGHT_COLOR)
-        game.light_map[origin_y][origin_x] = sampled_light
+	// --- Lighting pass ---
+	if lantern_radius > 0 {
+		sampled_light := sample_color(LANTERN_LIGHT_COLOR)
+		game.light_map[origin_y][origin_x] = sampled_light
 
-        light_visited := make(map[[2]int]bool)
-        defer delete(light_visited)
-        for octant in 0..< 8 {
-            cast_light(game, origin_x, origin_y, lantern_radius, octant, 1,  1.0, 0.0, &light_visited, .Lighting, sampled_light)
-        }
-    }
+		light_visited := make(map[[2]int]bool)
+		defer delete(light_visited)
+		for octant in 0 ..< 8 {
+			cast_light(
+				game,
+				origin_x,
+				origin_y,
+				lantern_radius,
+				octant,
+				1,
+				1.0,
+				0.0,
+				&light_visited,
+				.Lighting,
+				sampled_light,
+			)
+		}
+	}
 
 }
 
@@ -224,4 +247,22 @@ has_line_of_sight :: proc(game: ^Game, x0, y0, x1, y1: int) -> bool {
 
 is_blocking :: proc(tile: Tile) -> bool {
 	return tile == .Wall
+}
+
+// === LOS ===
+has_los :: proc(game: ^Game, x0, y0, x1, y1: int) -> bool {
+	dx := abs(x1 - x0)
+	dy := abs(y1 - y0)
+	sx := 1 if x0 < x1 else -1
+	sy := 1 if y0 < y1 else -1
+	err := dx - dy
+	x, y := x0, y0
+	for {
+		if x == x1 && y == y1 {return true}
+		if get_tile(game, x, y) == .Wall {return false}
+		e2 := 2 * err
+		if e2 > -dx {err -= dy; x += sx}
+		if e2 < dy {err += dx; y += sy}
+	}
+    return true
 }

@@ -4,8 +4,8 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
-MAP_WIDTH :: 25
-MAP_HEIGHT :: 25
+MAP_WIDTH :: 50
+MAP_HEIGHT :: 50
 VIEWPORT_WIDTH :: 60
 VIEWPORT_HEIGHT :: 34
 
@@ -58,6 +58,28 @@ Action :: enum {
 	UseItem,
 }
 
+Enemy_Tag :: enum {
+	Carries_Light,
+	Dark_Vision,
+	Smell_Based,
+	Large,
+	Stealthy,
+}
+
+Enemy_Type :: enum {
+	Thrall,
+	Wolf,
+	Shade,
+	Lantern_Pest,
+	Skeleton_Knight,
+	Wraith,
+}
+
+AI_State :: enum {
+	Idle,
+	Hunting,
+}
+
 // TODO: improve scheduler — starts 1 tick ahead of turn
 Scheduler :: struct {
 	actors:       [dynamic]^Actor,
@@ -100,10 +122,16 @@ Player_Data :: struct {
 }
 
 Enemy_Data :: struct {
-	name:   string,
-	color:  rl.Color,
-	char:   cstring,
-	damage: int,
+	name:         string,
+	color:        rl.Color,
+	char:         cstring,
+	damage:       int,
+	vision_range: int,
+	enemy_type:    Enemy_Type,
+	ai_state:      AI_State,
+	tags:          bit_set[Enemy_Tag],
+	last_known_x:  int,
+	last_known_y:  int,
 }
 
 Debug_Throttle :: struct {

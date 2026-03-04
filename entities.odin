@@ -10,26 +10,75 @@ update_player :: proc(game: ^Game, actor: ^Actor, next_x, next_y: int) {
 }
 
 update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
-	if !actor.alive {return .Wait}
+	enemy_data, ok := &actor.data.(Enemy_Data)
 	player := get_player(game)
+	if !ok {return .Wait}
 
-	next_x, next_y, found := astar_step(game, actor.x, actor.y, player.x, player.y)
-
-	if get_enemy_at(game, next_x, next_y) != nil {return .Wait}
-
-	if found && (next_x != actor.x || next_y != actor.y) {
-		if next_x == player.x && next_y == player.y {
-			resolve_enemy_attack(game, actor^, player)
-			return .Attack
+	switch enemy_data.ai_state {
+	case .Idle:
+		if can_detect_player(game, actor) {
+			enemy_data.ai_state = .Hunting
+			enemy_data.last_known_x = player.x
+			enemy_data.last_known_y = player.y
+			return .Wait
 		}
-		if get_enemy_at(game, next_x, next_y) != nil {return .Wait}
-		actor.x = next_x
-		actor.y = next_y
-		return .Move
-	}
-	// ai state switch later, hunting/alert/roaming/idle etc.
+	case .Hunting:
+		if can_detect_player(game, actor) {
+			enemy_data.last_known_x = player.x
+			enemy_data.last_known_y = player.y
+		}
 
+		next_x, next_y, found := astar_step(
+			game,
+			actor.x,
+			actor.y,
+			enemy_data.last_known_x,
+			enemy_data.last_known_y,
+		)
+
+		if found && (next_x != actor.x || next_y != actor.y) {
+			if next_x == player.x && next_y == player.y {
+				resolve_enemy_attack(game, actor^, player)
+				return .Attack
+			}
+			if get_enemy_at(game, next_x, next_y) != nil {return .Wait}
+			actor.x = next_x
+			actor.y = next_y
+			return .Move
+		}
+
+		if actor.x == enemy_data.last_known_x && actor.y == enemy_data.last_known_y {
+			if !can_detect_player(game, actor) {
+				enemy_data.ai_state = .Idle
+			}
+		}
+
+	}
 	return .Wait
+}
+
+can_detect_player :: proc(game: ^Game, actor: ^Actor) -> bool {
+	player := get_player(game)
+	enemy_data, ok := actor.data.(Enemy_Data)
+	if !ok {return false}
+
+	// raw
+	dist := max(abs(actor.x - player.x), abs(actor.y - player.y))
+	if dist > enemy_data.vision_range {return false}
+
+	// light
+	if .Dark_Vision not_in enemy_data.tags {
+		player_data := player.data.(Player_Data)
+		if player_data.lantern.state != .Lit {
+			if dist > 3 {return false}
+		}
+	}
+
+	// los
+	if !has_los(game, actor.x, actor.y, player.x, player.y) {
+		return false
+	}
+	return true
 }
 
 spawn_enemies :: proc(game: ^Game, count: int) {
@@ -70,6 +119,9 @@ make_thrall :: proc(id, x, y: int) -> Actor {
 			char = "t",
 			color = sample_color(THRALL_COLOR),
 			damage = 3,
+			enemy_type = .Thrall,
+			vision_range = 8,
+			tags = {.Carries_Light},
 		},
 	}
 }
@@ -83,7 +135,15 @@ make_wolf :: proc(id, x, y: int) -> Actor {
 		max_hp = 12,
 		alive = true,
 		speed = 120,
-		data = Enemy_Data{name = "Wolf", char = "w", color = sample_color(WOLF_COLOR), damage = 5},
+		data = Enemy_Data {
+			name = "Wolf",
+			char = "w",
+			color = sample_color(WOLF_COLOR),
+			damage = 5,
+			enemy_type = .Wolf,
+			vision_range = 6,
+			tags = {.Large, .Dark_Vision},
+		},
 	}
 }
 
@@ -128,11 +188,11 @@ resolve_kick :: proc(game: ^Game, player: ^Actor, target: ^Actor, dx, dy: int) {
 		// Normal kick
 	} else {
 		target.hp -= base_damage
-        if e, ok := target.data.(Enemy_Data); ok {
+		if e, ok := target.data.(Enemy_Data); ok {
 			log_combat(game, "You kick the %s!", e.name)
 		}
 	}
-    if target.hp <= 0 {
-        kill_enemy(game, target)
-}
+	if target.hp <= 0 {
+		kill_enemy(game, target)
+	}
 }
