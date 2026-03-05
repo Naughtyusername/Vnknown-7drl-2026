@@ -36,5 +36,13 @@ resolve_enemy_attack :: proc(game: ^Game, enemy: Actor, player: ^Actor) {
 
 	game.death_cause = enemy_data.name // sets death flag name were this hit to be the last hit
 	player.hp -= enemy_data.damage
+	if enemy_data.enemy_type == .Lantern_Pest {
+		if pd, p_ok := &player.data.(Player_Data); p_ok {
+			if pd.lantern.state == .Lit {
+				pd.lantern.state = .Extinguished
+				log_messagef(game, "The pest smothers your flame!")
+			}
+		}
+	}
 	log_combat(game, "The %s hits you for %d!", enemy_data.name, enemy_data.damage)
 }

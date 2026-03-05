@@ -141,7 +141,8 @@ generate_dungeon :: proc(game: ^Game) {
 
 	// map placement
 	place_stairs(game)
-	spawn_enemies(game, 10)
+	enemy_count := 6 + game.current_floor * 2 // 8 on floor 1, 26 on floor 10
+	spawn_enemies(game, enemy_count)
 	place_traps(game)
 	spawn_gold_piles(game)
 

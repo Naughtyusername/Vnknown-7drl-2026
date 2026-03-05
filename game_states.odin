@@ -1,6 +1,7 @@
 package sdrl
 
 import "core:fmt"
+import "core:math/rand"
 import rl "vendor:raylib"
 
 // --- State Machine Base ---
@@ -243,6 +244,33 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 				center_camera(&game.camera, actor.x, actor.y, game.map_width, game.map_height)
 				compute_fov(game, actor.x, actor.y, fov_r, lantern_r)
 				game.turn_count += 1
+
+				WRAITH_SPAWN_TURN :: 150 // per floor, can repeat TODO
+				// wraith spawn checker
+				if !game.wraith_spawned &&
+				   game.current_floor >= 2 &&
+				   game.turn_count >= WRAITH_SPAWN_TURN {
+					player := get_player(game)
+					// Find a floor tile far from player, basically rip the stair logic
+					spawn_x, spawn_y := player.x, player.y
+					best_dist := 0
+					for _ in 0 ..< 200 {
+						tx := rand.int_max(game.map_width)
+						ty := rand.int_max(game.map_height)
+						if game.tiles[ty][tx] != .Floor {continue}
+						d := max(abs(tx - player.x), abs(ty - player.y))
+						if d > best_dist {
+							best_dist = d
+							spawn_x, spawn_y = tx, ty
+						}
+						if best_dist > 15 {break}
+					}
+					wraith := make_wraith(len(game.actors), spawn_x, spawn_y)
+					append(&game.actors, wraith)
+					schedule_actor(&game.scheduler, &game.actors[len(game.actors) - 1])
+					game.wraith_spawned = true
+					log_messagef(game, "A chill runs down your spine...")
+				}
 
 				player_acted = true
 			} else {

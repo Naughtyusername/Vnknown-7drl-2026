@@ -83,25 +83,46 @@ Enemy_Type :: enum {
 
 Potion_Type :: enum {
 	Healing,
-	Fuel,
-	Clarity,
-	Blindness,
-	Confusion,
-	Fire,
+	Fuel, // portable fuel in emergencies
+	Clarity, // see items/stairs, etc.
+	Blindness, // lights out
+	Confusion, // shrooms
+	Fire, // ouch + light
 	Darkness,
 }
 
+Potion_Data :: struct {
+	type: Potion_Type,
+}
+
 Scroll_Type :: enum {
-	Enchantment,
-	Map_Reveal,
-	Hostile_Tracking,
-	Identify,
-	Summoning, // id items might get nixed.
-_}
+	Enchantment, // +1 TODO give player a armor piece to upgrade with this for defense.
+	Map_Reveal, // TODO rip this from the main game
+	Hostile_Tracking, // brogue twinkles.
+	Identify, // id items might get nixed.
+	Summoning, // pray for help buddy.
+}
+
+Scroll_Data :: struct {
+	type: Scroll_Type,
+}
+
+Item :: struct {
+	id:   int,
+	data: Item_Data,
+	x, y: int,
+}
+
+Item_Data :: union {
+	Potion_Data,
+	Scroll_Data,
+}
 
 AI_State :: enum {
 	Idle,
 	Hunting,
+	Roaming,
+	Fleeing,
 }
 
 // TODO: improve scheduler — starts 1 tick ahead of turn
@@ -259,11 +280,14 @@ Game :: struct {
 	wants_restart:    bool,
 	// Traps
 	traps:            [dynamic]Trap,
+	// Items / inv
+	items:            [dynamic]Item,
 	// status
 	last_action_cost: int,
 	current_floor:    int,
 	death_cause:      string, // "Thrall", "Wolf" - set when player dies
 	enemies_slain:    int,
+	wraith_spawned: bool,
 	// log/debug
 	logger:           Logger,
 	debug_throttles:  map[string]Debug_Throttle,
@@ -303,6 +327,9 @@ init_game :: proc(width, height: int) -> Game {
 
 	// eventually increase the size of this... TODO this will leak / break otherwise
 	game.actors = make([dynamic]Actor, 0, 50)
+
+	// Items / Inv
+	game.items = make([dynamic]Item, 0, 32)
 
 	// Traps
 	game.traps = make([dynamic]Trap, 0, 32)
@@ -386,6 +413,7 @@ cleanup_game :: proc(game: ^Game) {
 	delete(game.scheduler.actors)
 	delete(game.traps)
 	delete(game.gold_piles)
+	delete(game.items)
 
 	cleanup_messages_log(&game.game_log)
 	cleanup_messages_log(&game.combat_log)
@@ -424,6 +452,7 @@ restart_game :: proc(game: ^Game) {
 	game.pedestal = nil
 	clear(&game.traps)
 	clear(&game.gold_piles)
+	clear(&game.items)
 
 	resize(&game.actors, 1)
 	generate_dungeon(game)
@@ -443,6 +472,7 @@ restart_game :: proc(game: ^Game) {
 	compute_fov(game, player.x, player.y, fov_r, lantern_r)
 }
 
+// === HELPER Functions ===
 get_tile :: proc(game: ^Game, x, y: int) -> Tile {
 	if x < 0 || x >= game.map_width || y < 0 || y >= game.map_height {
 		return .Wall
@@ -491,6 +521,7 @@ is_player :: proc(actor: ^Actor) -> bool {
 	return ok
 }
 
+// === Lantern / Fov ===
 Lantern_State :: enum {
 	Lit,
 	Extinguished, // blown out from trap or enemy etc. - re-light with flint
@@ -558,6 +589,7 @@ drain_fuel :: proc(game: ^Game) {
 	}
 }
 
+// === ACTION economy / scheudler queue ===
 get_action_cost :: proc(action: Action) -> int {
 	switch action {
 	case .Move:
@@ -596,6 +628,7 @@ pop_next_actor :: proc(scheduler: ^Scheduler) -> ^Actor {
 	return actor
 }
 
+// === LOGGING / debug etc.
 log_debug_categoryf :: proc(
 	game: ^Game,
 	category: string,
@@ -665,6 +698,8 @@ log_gamef :: proc(game: ^Game, level: Log_Level, format: string, args: ..any) {
 	log_game(game, level, message)
 }
 
+// === flooor ascention / descention logic / debug / reset game
+
 descend_floor :: proc(game: ^Game) {
 	game.current_floor += 1
 
@@ -687,6 +722,7 @@ descend_floor :: proc(game: ^Game) {
 	game.pedestal = nil
 	clear(&game.traps)
 	clear(&game.gold_piles)
+	clear(&game.items)
 
 	// Generate new floor
 	generate_dungeon(game)
@@ -730,6 +766,7 @@ ascend_floor :: proc(game: ^Game) {
 	game.pedestal = nil
 	clear(&game.traps)
 	clear(&game.gold_piles)
+	clear(&game.items)
 
 	// Generate new floor
 	generate_dungeon(game)
@@ -751,6 +788,7 @@ ascend_floor :: proc(game: ^Game) {
 	log_messagef(game, "You descend to floor %d...", game.current_floor)
 }
 
+// === BOONS
 grant_random_boon :: proc(game: ^Game) {
 	player := get_player(game)
 	pd := &player.data.(Player_Data)
@@ -795,6 +833,7 @@ boon_name :: proc(boon: Player_Boon) -> string {
 	return "Unknown Boon"
 }
 
+// GOLD
 try_pickup_gold :: proc(game: ^Game) {
 	player := get_player(game)
 	pd := &player.data.(Player_Data)

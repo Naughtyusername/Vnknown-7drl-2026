@@ -14,7 +14,9 @@ update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
 	player := get_player(game)
 	if !ok {return .Wait}
 
-	switch enemy_data.ai_state {
+	// TODO added a roaming ai, not handled yet
+	#partial switch enemy_data.ai_state {
+	// idle
 	case .Idle:
 		if can_detect_player(game, actor) {
 			enemy_data.ai_state = .Hunting
@@ -25,6 +27,17 @@ update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
 		if enemy_data.enemy_type == .Wolf {
 			alert_wolf_pack(game, actor)
 		}
+		if enemy_data.enemy_type == .Shade {
+			player_data := player.data.(Player_Data)
+			tile_lit := !is_dark(game.light_map[actor.y][actor.x])
+			if tile_lit && player_data.lantern.state == .Lit {
+				enemy_data.ai_state = .Fleeing;{
+					enemy_data.ai_state = .Idle
+				}
+
+			}
+		}
+	// hunting
 	case .Hunting:
 		if can_detect_player(game, actor) {
 			enemy_data.last_known_x = player.x
@@ -57,7 +70,29 @@ update_enemy :: proc(game: ^Game, actor: ^Actor) -> Action {
 				enemy_data.ai_state = .Idle
 			}
 		}
-
+	// Fleeing
+	case .Fleeing:
+		best_x, best_y := actor.x, actor.y
+		best_dist := max(abs(actor.x - player.x), abs(actor.y - player.y))
+		for dir in ([4][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}) {
+			nx := actor.x + dir[0]
+			ny := actor.y + dir[1]
+			if get_tile(game, nx, ny) == .Wall {continue}
+			if get_enemy_at(game, nx, ny) != nil {continue}
+			d := max(abs(nx - player.x), abs(ny - player.y))
+			if d > best_dist {
+				best_dist = d
+				best_x, best_y = nx, ny
+			}
+		}
+		if best_x != actor.x || best_y != actor.y {
+			actor.x = best_x
+			actor.y = best_y
+			check_trap(game, actor)
+			return .Move
+		}
+	//Roaming
+	// TODO
 	}
 	return .Wait
 }
@@ -117,10 +152,15 @@ spawn_enemies :: proc(game: ^Game, count: int) {
 			}
 		}
 		actor: Actor
-		if rand.float32() < 0.6 {
+		roll := rand.float32()
+		if game.current_floor >= 2 && roll < 0.15 {
+			actor = make_shade(len(game.actors), x, y)
+		} else if roll < 0.50 {
 			actor = make_thrall(len(game.actors), x, y)
-		} else {
+		} else if roll < 0.80 {
 			actor = make_wolf(len(game.actors), x, y)
+		} else {
+			actor = make_lantern_pest(len(game.actors), x, y)
 		}
 		append(&game.actors, actor)
 	}
@@ -187,6 +227,60 @@ make_wolf :: proc(id, x, y: int) -> Actor {
 	}
 }
 
+make_lantern_pest :: proc(id, x, y: int) -> Actor {
+	return Actor {
+		id = id,
+		x = x,
+		y = y,
+		hp = 4,
+		max_hp = 4,
+		alive = true,
+		speed = 150,
+		data = Enemy_Data {
+			name = "Lantern Pest",
+			char = "p",
+			color = sample_color(PEST_COLOR),
+			vision_range = 10,
+			tags = {.Dark_Vision},
+		},
+	}
+}
+
+make_shade :: proc(id, x, y: int) -> Actor {
+	return Actor {
+		id = id,
+		x = x,
+		y = y,
+		hp = 6,
+		max_hp = 6,
+		alive = true,
+		speed = 90,
+		data = Enemy_Data {
+			name = "Shade",
+			char = "s",
+			color = sample_color(SHADE_COLOR),
+			damage = 6,
+			enemy_type = .Shade,
+			vision_range = 12,
+			tags = {.Dark_Vision, .Stealthy},
+		},
+	}
+}
+
+make_wraith :: proc(id, x, y: int) -> Actor {
+	return Actor {
+		id = id, x = x, y = y,
+		hp = 20, max_hp = 20, alive = true, speed = 80,
+		data = Enemy_Data {
+			name = "Wraith", char = "W",
+			color = sample_color(WRAITH_COLOR),
+			damage = 8, enemy_type = .Wraith,
+			vision_range = 20,
+			tags = {.Dark_Vision, .Carries_Light},
+		},
+}
+}
+
 check_trap :: proc(game: ^Game, actor: ^Actor) {
 	for &trap in game.traps {
 		if trap.x != actor.x || trap.y != actor.y {continue}
@@ -213,6 +307,7 @@ check_trap :: proc(game: ^Game, actor: ^Actor) {
 				actor.stunned_turns = 2
 			}
 		case .Alarm:
+			// This may be a bit too aggressive haha TODO
 			for &a in game.actors {
 				if e, ok := &a.data.(Enemy_Data); ok {
 					e.ai_state = .Hunting
