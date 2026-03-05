@@ -649,6 +649,46 @@ descend_floor :: proc(game: ^Game) {
 	log_messagef(game, "You descend to floor %d...", game.current_floor)
 }
 
+ascend_floor :: proc(game: ^Game) {
+	game.current_floor -= 1
+
+	// Free old map data (rows only - outer arrays stay allocated)
+	for y in 0 ..< game.map_height {
+		// Rest to defaults instead of free+realloc
+		for x in 0 ..< game.map_width {
+			game.tiles[y][x] = .Floor
+			game.revealed[y][x] = false
+			game.visible[y][x] = false
+			game.light_map[y][x] = LIGHT_NONE
+		}
+	}
+
+	// keep only the player
+	resize(&game.actors, 1)
+
+	game.treasure_room = nil
+	game.pedestal = nil
+
+	// Generate new floor
+	generate_dungeon(game)
+
+	// Rebuild scheduler
+	clear(&game.scheduler.actors)
+	for &actor in game.actors {
+		schedule_actor(&game.scheduler, &actor)
+	}
+
+	// Center cameraand recompute FOV
+	player := get_player(game)
+	center_camera(&game.camera, player.x, player.y, game.map_width, game.map_height)
+
+	fov_r, lantern_r := get_fov_radii(game)
+	compute_fov(game, player.x, player.y, fov_r, lantern_r)
+	player.hp = player.max_hp
+
+	log_messagef(game, "You descend to floor %d...", game.current_floor)
+}
+
 grant_random_boon :: proc(game: ^Game) {
 	player := get_player(game)
 	pd := &player.data.(Player_Data)

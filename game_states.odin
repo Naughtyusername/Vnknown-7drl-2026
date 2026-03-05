@@ -185,6 +185,16 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 			grant_random_boon(game)
 		}
 	}
+	when ODIN_DEBUG {
+		if rl.IsKeyPressed(.MINUS) {
+			descend_floor(game)
+		}
+	}
+	when ODIN_DEBUG {
+		if rl.IsKeyPressed(.EQUAL) {
+			ascend_floor(game)
+		}
+	}
 
 	player_acted := false
 
