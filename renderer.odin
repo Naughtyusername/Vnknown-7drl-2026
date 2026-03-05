@@ -3,7 +3,7 @@ package sdrl
 import "core:fmt"
 import rl "vendor:raylib"
 HUD_X_TURNS :: 0
-HUD_X_GOLD :: HUD_X_TURNS + 80
+HUD_X_GOLD :: HUD_X_TURNS + 150
 
 draw_map :: proc(game: ^Game) {
 	min_x, min_y, max_x, max_y := get_viewport_bounds(game.camera)

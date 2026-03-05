@@ -114,7 +114,25 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 		restart_game(game)
 		return
 	}
+	// Open Inv
+	if rl.IsKeyPressed(.I) {
+		inv := new(Inventory_State)
+		inv.game_ptr = game
+		inv.selected_idx = -1
+		push_state(
+			sm,
+			Game_State {
+				data = inv,
+				update = inventory_update,
+				draw = inventory_draw,
+				kill = inventory_kill,
+				is_transparent = true,
+			},
+		)
+		return
+	}
 
+	// Restart Game Debug feature TODO Remove or wrap in ODIN_DEBUG before releasing on the 7th
 	if rl.IsKeyPressed(.R) {
 		for y in 0 ..< game.map_height {
 			for x in 0 ..< game.map_width {
@@ -123,22 +141,6 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 			}
 		}
 
-		if rl.IsKeyPressed(.I) {
-			inv := new(Inventory_State)
-			inv.game_ptr = game
-			inv.selected_idx = -1
-			push_state(
-				sm,
-				Game_State {
-					data = inv,
-					update = inventory_update,
-					draw = inventory_draw,
-					kill = inventory_kill,
-					is_transparent = true,
-				},
-			)
-			return
-		}
 
 		resize(&game.actors, 1) // Keep only player at index 0 ALWAYS
 
@@ -529,14 +531,14 @@ inventory_draw :: proc(sm: ^State_Manager, data: rawptr) {
 	game := state.game_ptr
 	pd := get_player(game).data.(Player_Data)
 
-	INV_X :: i32(80)
-	INV_Y :: i32(60)
-	INV_W :: i32(SCREEN_W) - 160
-	INV_H :: i32(SCREEN_H) - 120
+	INV_X :: i32(SCREEN_W) * 3 / 4
+	INV_Y :: i32(0)
+	INV_W :: i32(SCREEN_W) / 4
+	INV_H :: i32(SCREEN_H)
 	INV_FONT :: i32(16)
 	INV_LINE_H :: i32(20)
 
-	rl.DrawRectangle(INV_X, INV_Y, INV_W, INV_H, rl.Color{0, 8, 20, 235})
+	rl.DrawRectangle(INV_X, INV_Y, INV_W, INV_H, rl.Color{0, 8, 20, 135}) // mostly transparent so you dont miss anything
 	rl.DrawRectangleLinesEx(
 		rl.Rectangle{f32(INV_X), f32(INV_Y), f32(INV_W), f32(INV_H)},
 		1,
