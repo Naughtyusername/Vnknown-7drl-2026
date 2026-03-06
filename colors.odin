@@ -98,6 +98,9 @@ UI_BG :: rl.Color{20, 20, 25, 255}
 UI_TEXT :: rl.Color{220, 220, 220, 255}
 UI_HIGHLIGHT :: rl.Color{255, 215, 0, 255}
 
+// Sanity
+SANITY_LOW_COLOR :: rl.Color{160, 40, 220, 255}
+
 add_light :: proc(existing: rl.Color, new_light: rl.Color) -> rl.Color {
 	return rl.Color {
 		min(u8(int(existing.r) + int(new_light.r)), 255),

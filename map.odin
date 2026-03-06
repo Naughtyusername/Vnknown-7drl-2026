@@ -171,7 +171,7 @@ place_traps :: proc(game: ^Game) {
 
 	rand.shuffle(corridors[:])
 
-	num_traps := 3 + game.current_floor / 3
+	num_traps := 3 + game.current_floor / 2
 	placed := 0
 
 	for candidate in corridors {

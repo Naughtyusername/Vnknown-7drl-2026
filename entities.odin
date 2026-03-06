@@ -405,15 +405,13 @@ check_trap :: proc(game: ^Game, actor: ^Actor) {
 			log_messagef(game, "A shrill alarm sounds!")
 		case .Gas:
 			if is_player_actor {
-				pd := actor.data.(Player_Data)
-				if .Iron_Lungs not_in pd.boons {
-					if data := &actor.data.(Player_Data); true {
-						data.lantern.fuel -= 50 // TODO make sure this is working
-						if data.lantern.fuel < 0 {data.lantern.fuel = 0}
+				if pd, pd_ok := &actor.data.(Player_Data); pd_ok {
+					if .Iron_Lungs not_in pd.boons {
+						pd.lantern.state = .Extinguished
+						log_messagef(game, "A burst of gas snuffs out your lantern!")
 					}
-					log_messagef(game, "Choking gas! Your lantern dims.")
 				} else {
-					log_messagef(game, "Choking gas -- but your lungs hold")
+					log_messagef(game, "Gas erupts around you -- your lantern holds steady")
 				}
 			}
 		case .Pit:

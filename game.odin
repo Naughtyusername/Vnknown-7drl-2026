@@ -152,10 +152,10 @@ item_name :: proc(item: Item) -> string {
 			return "Scroll of Summoning"
 		}
 	//case Ring_Data:
-        // switch d.type {
-		// case .RingNames:
+	// switch d.type {
+	// case .RingNames:
 
-		//}
+	//}
 	}
 	return "Unknown Item"
 }
@@ -867,6 +867,7 @@ descend_floor :: proc(game: ^Game) {
 
 	fov_r, lantern_r := get_fov_radii(game)
 	compute_fov(game, player.x, player.y, fov_r, lantern_r)
+	player.max_hp += 5 // fixed player scaling value
 	player.hp = player.max_hp
 
 	log_messagef(game, "You descend to floor %d...", game.current_floor)
