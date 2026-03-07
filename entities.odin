@@ -258,7 +258,7 @@ make_thrall :: proc(id, x, y: int) -> Actor {
 			damage = 3,
 			enemy_type = .Thrall,
 			vision_range = 8,
-			light_radius = 5,
+			light_radius = 8,
 			tags = {.Carries_Light},
 		},
 	}
@@ -408,10 +408,11 @@ check_trap :: proc(game: ^Game, actor: ^Actor) {
 				if pd, pd_ok := &actor.data.(Player_Data); pd_ok {
 					if .Iron_Lungs not_in pd.boons {
 						pd.lantern.state = .Extinguished
-						log_messagef(game, "A burst of gas snuffs out your lantern!")
+						pd.lantern.fuel -= 30
+						log_messagef(game, "A burst of gas snuffs out your lantern! [-30 Fuel]")
+					} else {
+						log_messagef(game, "Gas erupts around you -- your lantern holds steady")
 					}
-				} else {
-					log_messagef(game, "Gas erupts around you -- your lantern holds steady")
 				}
 			}
 		case .Pit:

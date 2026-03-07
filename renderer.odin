@@ -145,10 +145,9 @@ draw_game :: proc(sm: ^State_Manager) {
 should_draw_enemy :: proc(game: ^Game, actor: ^Actor) -> (draw: bool, dimmed: bool) {
 	player := get_player(game)
 	player_data := player.data.(Player_Data)
-	// not in FOV at all - never draw
-	if !game.visible[actor.y][actor.x] {return false, false}
-
 	enemy_data, ok := actor.data.(Enemy_Data)
+	if !ok {return false, false}
+
 	// stealthy enemies always visible up close - this stops the diagonal invisible hits
 	// that i found to be not fun in playtesting.
 	NEAR_REVEAL_RADIUS :: 3
@@ -161,10 +160,11 @@ should_draw_enemy :: proc(game: ^Game, actor: ^Actor) -> (draw: bool, dimmed: bo
 			return true, false
 		}
 	}
-	if !ok {return false, false}
+
+	// not in FOV at all - never draw
+	if !game.visible[actor.y][actor.x] {return false, false}
 
 	tile_lit := !is_dark(game.light_map[actor.y][actor.x])
-
 	if tile_lit {
 		// Lit tile - stealthy enemies only visible within lantern radius
 		if .Stealthy in enemy_data.tags {
