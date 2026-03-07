@@ -363,10 +363,10 @@ make_wraith :: proc(id, x, y: int) -> Actor {
 		id = id,
 		x = x,
 		y = y,
-		hp = 20,
-		max_hp = 20,
+		hp = 30,
+		max_hp = 30,
 		alive = true,
-		speed = 80,
+		speed = 100,
 		data = Enemy_Data {
 			name = "Wraith",
 			char = "W",

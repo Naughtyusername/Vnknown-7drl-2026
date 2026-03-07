@@ -273,6 +273,7 @@ Player_Data :: struct {
 	last_dy:       int,
 	boons:         bit_set[Player_Boon],
 	sanity:        int,
+	sanity_tick: int,
 	// curses / negatives
 	ring:          Maybe(Ring_Type),
 }

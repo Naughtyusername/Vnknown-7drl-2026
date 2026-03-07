@@ -340,10 +340,35 @@ playing_update :: proc(sm: ^State_Manager, data: rawptr) {
 				}
 				game.turn_count += 1
 
-				// sanity drain
+				// sanity drain -- lazy fast -- TODO base this not on lantern state but is_tile_lit....
+				// but we still have the bug of light ball blobs so unless i fix that before lauch, this is safer.
 				if pd, pd_ok := &get_player(game).data.(Player_Data); pd_ok {
-					if pd.lantern.state == .Empty {
+					pd.sanity_tick += 1
+					#partial switch pd.lantern.state {
+					case .Empty:
 						pd.sanity = max(0, pd.sanity - 1)
+					case .Extinguished:
+						if pd.sanity_tick % 2 == 0 {
+							pd.sanity = max(0, pd.sanity - 1)
+						}
+					case .Lit:
+						// starting with 10 turns per sanity regen, scale from there (clamp to 100 in here since i didnt do it elsewhere...TODO maybe do that since other things will drain sanity.)
+						if pd.sanity_tick % 10 == 0 && pd.sanity <= 99 {
+							pd.sanity = max(0, pd.sanity + 1)
+						}
+						// Wraith Sanity drain -- TODO Boss will be similar to this wehn implemented
+						for &other in game.actors {
+							e, e_ok := other.data.(Enemy_Data)
+							if !e_ok || !other.alive {continue}
+							if e.enemy_type != .Wraith {continue}
+							dist := max(
+								abs(other.x - get_player(game).x),
+								abs(other.y - get_player(game).y),
+							)
+							if dist <= 5 {
+								pd.sanity = max(0, pd.sanity - 1)
+							}
+						}
 					}
 				}
 
