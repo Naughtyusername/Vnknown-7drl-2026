@@ -11,14 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Odin
-        run: |
-          ODIN_VER=$(gh release list --repo odin-lang/Odin --limit 1 --json tagName --jq '.[0].tagName')
-          wget -q "https://github.com/odin-lang/Odin/releases/download/${ODIN_VER}/odin-linux-amd64-${ODIN_VER}.tar.gz"
-          mkdir odin && tar -xzf "odin-linux-amd64-${ODIN_VER}.tar.gz" --strip-components=1 -C odin
-          echo "$GITHUB_WORKSPACE/odin" >> $GITHUB_PATH
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Linux
         run: |
@@ -41,25 +36,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Odin
-        run: |
-          ODIN_VER=$(gh release list --repo odin-lang/Odin --limit 1 --json tagName --jq '.[0].tagName')
-          curl -sLO "https://github.com/odin-lang/Odin/releases/download/${ODIN_VER}/odin-windows-amd64-${ODIN_VER}.zip"
-          unzip -q "odin-windows-amd64-${ODIN_VER}.zip" -d odin-tmp
-          mkdir -p odin
-          if [ -f "odin-tmp/odin.exe" ]; then
-            mv odin-tmp/* odin/
-          else
-            mv odin-tmp/*/* odin/
-          fi
-          rm -rf odin-tmp
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Windows
         run: |
           mkdir -p dist/windows
-          ./odin/odin build . -out:dist/windows/sdrl.exe -target:windows_amd64 -o:speed -no-bounds-check
+          odin build . -out:dist/windows/sdrl.exe -target:windows_amd64 -o:speed -no-bounds-check
           cp README.md dist/windows/ 2>/dev/null || true
           (cd dist/windows && 7z a -tzip ../../sdrl-windows-x64-${{ github.ref_name }}.zip .)
 
@@ -73,14 +57,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Odin
-        run: |
-          ODIN_VER=$(gh release list --repo odin-lang/Odin --limit 1 --json tagName --jq '.[0].tagName')
-          wget -q "https://github.com/odin-lang/Odin/releases/download/${ODIN_VER}/odin-macos-arm64-${ODIN_VER}.tar.gz"
-          mkdir odin && tar -xzf "odin-macos-arm64-${ODIN_VER}.tar.gz" --strip-components=1 -C odin
-          echo "$GITHUB_WORKSPACE/odin" >> $GITHUB_PATH
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build macOS
         run: |
